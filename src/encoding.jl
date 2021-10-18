@@ -3,6 +3,9 @@ encoding.jl; This file implements functions to encode token-based data, be it al
 =#
 
 
+const HYPERVECTOR_DIM = convert(Int16, 10000)
+
+
 """
 This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.\n
 
@@ -11,8 +14,14 @@ Input:
     - the type of vector, either bipolar or binary. By default this is a bipolar vector.\n
 Output: a dictionary with vector encodings for each token in the alphabet.
 """
-function encode_alphabet(alphabet::Vector{Char}; vectortype=BipolarVector)
-    return Dict((token=>vectortype() for token in alphabet))
+function encode_alphabet(alphabet::Vector{Char}; vectortype="bipolar")
+    if vectortype=="bipolar"
+        return Dict((token=>rand(Int64[-1 1], HYPERVECTOR_DIM) for token in alphabet))
+    elseif vectortype=="binary"
+        return Dict((token=>rand(Bool, HYPERVECTOR_DIM) for token in alphabet))
+    else
+        error("Please choose a valid vectortype: either bipolar or binary")
+    end
 end
 
 
@@ -27,26 +36,31 @@ Output: a hypervector encoding for the sequence.\n
 
 DISCLAIMER: Removed the 'dim' argument from this function, as it has to be equal to the dimensionality of the alphabet hypervectors.
 
-Addition comments: \n
+Additional comments: \n
     - kmer_encoding with a sum instead of mutiplication?\n
     - circshift over entire sequence with k=1.
 """
 function encode_sequence(sequence::String, encoded_alphabet::Dict; k=1::Int)
     # precompute the first kmer-encoding as the starting point as both ones() and zeros() vectors will cause issues with binary hypervectors
-    encoding = encoded_alphabet[sequence[1:1+(k-1)][end]].vector
+    encoding = encoded_alphabet[sequence[1:1+(k-1)][end]]
     for kmer_index in 1:k-1
-        encoding = multiply(encoding, rotate(encoded_alphabet[sequence[1:1+(k-1)][end-kmer_index]].vector, kmer_index))
+        encoding = multiply(encoding, rotate(encoded_alphabet[sequence[1:1+(k-1)][end-kmer_index]], kmer_index))
     end
     
     # iterate over the others
     for sliding_index in 2:length(sequence)-(k-1)
-        kmer_encoding = encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end]].vector
+        kmer_encoding = encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end]]
         for kmer_index in 1:k-1
-            kmer_encoding = multiply(kmer_encoding, rotate(encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end-kmer_index]].vector, kmer_index))
+            kmer_encoding = multiply(kmer_encoding, rotate(encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end-kmer_index]], kmer_index))
         end
         encoding = aggregate(encoding, kmer_encoding)
     end
-    return encoding
+    if eltype(encoding) == Int
+        return sign.(encoding)
+    else
+        return encoding
+    end
+    #return encoding
 end
 
 #=

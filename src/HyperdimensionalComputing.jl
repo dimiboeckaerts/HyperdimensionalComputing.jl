@@ -1,5 +1,7 @@
 module HyperdimensionalComputing
 
+using Distances
+
 export HYPERVECTOR_DIM, Hypervector, BipolarVector, BinaryVector
 export multiply, aggregate, rotate
 export encode_alphabet, encode_sequence

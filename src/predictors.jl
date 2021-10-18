@@ -2,29 +2,33 @@
 predictors.jl; This file implements methods to compare encoded strings to references and to make predictions from this comparison.
 =#
 
+
+### Cosine distance predictor
 """
-This function makes predictions of the given encodings by comparing them to the\n
-class encodings. The cosine distance is computed for each of the class encodings\n
-and the class is returned as prediction for which the distance is the smallest.\n
-\n
-Input:\n
-- encoding_matrix: HVs of 'testsamples' in a matrix to make predictions for\n
-- class_encodings: HVs of the classes to compare with\n
-Output: predictions for each of the rows of the matrix
+This function makes predictions for the given encodings by finding the closest class encoding in terms of cosine distance.\n
+Input: 
+    - a vector of encoded test sequences.\n
+    - a dictionary of encoded reference sequences with their class a key.\n
+Output: a vector of class predictions in the same order as the input test encodings.\n
+    
+DISCLAIMER: Currently every test encoding given to this function will be classified to the closest class, even when the true class is not in the train encodings.
 """
-function cosine_predict(encoding_matrix::Array, class_encodings::Dict)
-    predictions = []
-    for row in 1:size(encoding_matrix)[1]
-        distances = Dict()
-        test_sample = encoding_matrix[row, :]
-        for (class, class_vector) in class_encodings # compute distances
-            distances[class] = cosine_dist(test_sample, class_vector)
+function cosine_predict(test_encodings::Vector, train_encodings::Dict)
+    predictions = Vector{String}()
+    for hv in test_encodings
+        closest_distance = Inf
+        match = missing
+        for (k, v) in train_encodings
+            dist = cosine_dist(hv, v)
+            if (dist < closest_distance)
+                closest_distance = dist
+                match = k
+            end
         end
-        prediction = findmin(distances)[2]
-        push!(predictions, prediction)
+        push!(predictions, match)
     end
     return predictions
 end
 
 
-### Add naive bayes predictor
+### Naive bayes predictor

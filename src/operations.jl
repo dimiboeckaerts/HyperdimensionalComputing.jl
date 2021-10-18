@@ -6,7 +6,7 @@ operations.jl; This file implements operations that can be done on hypervectors 
 """
 This function takes two hypervectors as input and returns a vector that is dissimilar to both. For bipolar vectors, this is an elementwise multiplication.
 """
-function multiply(hv1::Vector{Int8}, hv2::Vector{Int8})
+function multiply(hv1::Vector{Int}, hv2::Vector{Int})
     return hv1 .* hv2
 end
 
@@ -22,8 +22,8 @@ end
 """
 This functions aggragates two binary hypervectors to a new one that is similar to both. For bipolar vectors, this is possible by summing the elements at each position and returning their sign.
 """
-function aggregate(hv1::Vector{Int8}, hv2::Vector{Int8})
-    return hv1 .+ hv2 .|> sign
+function aggregate(hv1::Vector{Int}, hv2::Vector{Int})
+    return hv1 + hv2
 end
 
 
@@ -43,7 +43,7 @@ This function rotates a bipolar hypervector by a given degree in order to encode
 
 DISCLAIMER: still to be benchmarked. This might not be the fastest way to do this as circshift creates new vectors and allocates extra memory to a vector that in this case will be instantly discarded.
 """
-function rotate(hv::Vector{Int8}, degree::Int)
+function rotate(hv::Vector{Int}, degree::Int)
     return circshift(hv, -degree)
 end
 
