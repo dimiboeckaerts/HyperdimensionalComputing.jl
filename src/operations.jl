@@ -2,9 +2,6 @@
 operations.jl; This file implements operations that can be done on hypervectors to enable them to encode text-based data.
 =#
 
-using Random
-include("hypervectors.jl")
-
 
 """
 This function takes two hypervectors as input and returns a vector that is dissimilar to both. For bipolar vectors, this is an elementwise multiplication.

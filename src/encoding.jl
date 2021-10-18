@@ -2,9 +2,6 @@
 encoding.jl; This file implements functions to encode token-based data, be it alphabets, strings or full classes of text.
 =#
 
-include("hypervectors.jl")
-include("operations.jl")
-
 
 """
 This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.\n
