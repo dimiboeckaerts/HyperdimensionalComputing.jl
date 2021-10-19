@@ -13,8 +13,10 @@ end
 
 """
 This function takes two hypervectors as input and returns a vector that is dissimilar to both. For binary vectors, this is an X-OR operation.
+
+QUESTION: does this actually work elementwise?
 """
-function multiply(hv1::Vector{Bool}, hv2::Vector{Bool})
+function multiply(hv1::BitVector, hv2::BitVector)
     return hv1 .⊻ hv2
 end
 
@@ -22,7 +24,7 @@ end
 """
 This functions aggragates two binary hypervectors to a new one that is similar to both. For bipolar vectors, this is possible by summing the elements at each position and returning their sign.
 """
-function aggregate(hv1::Vector{Int}, hv2::Vector{Int})
+function add(hv1::Vector{Int}, hv2::Vector{Int})
     return hv1 + hv2
 end
 
@@ -33,8 +35,8 @@ This way, two ones return a one, two zeros return a zero, and a one and a zero h
 
 DISCLAIMER: this solution to averaging binary vectors is a bit iffy, but might still work.
 """
-function aggregate(hv1::Vector{Bool}, hv2::Vector{Bool})
-    return [rand([hv1[x], hv2[x]]) for x in 1:HYPERVECTOR_DIM]
+function add(hv1::BitVector, hv2::BitVector)
+    return convert(BitVector, [rand([hv1[x], hv2[x]]) for x in 1:HYPERVECTOR_DIM])
 end
 
 
@@ -43,7 +45,7 @@ This function rotates a bipolar hypervector by a given degree in order to encode
 
 DISCLAIMER: still to be benchmarked. This might not be the fastest way to do this as circshift creates new vectors and allocates extra memory to a vector that in this case will be instantly discarded.
 """
-function rotate(hv::Vector{Int}, degree::Int)
+function rotate(hv::Vector, degree::Int)
     return circshift(hv, -degree)
 end
 
@@ -51,6 +53,6 @@ end
 """
 This function rotates a binary hypervector by a given degree in order to encode its position. 
 """
-function rotate(hv::Vector{Bool}, degree::Int)
+function rotate(hv::BitVector, degree::Int)
     return hv >> -degree
 end

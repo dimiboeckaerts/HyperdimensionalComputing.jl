@@ -18,7 +18,7 @@ function encode_alphabet(alphabet::Vector{Char}; vectortype="bipolar")
     if vectortype=="bipolar"
         return Dict((token=>rand(Int64[-1 1], HYPERVECTOR_DIM) for token in alphabet))
     elseif vectortype=="binary"
-        return Dict((token=>rand(Bool, HYPERVECTOR_DIM) for token in alphabet))
+        return Dict((token=>convert(BitVector, rand(Bool, HYPERVECTOR_DIM)) for token in alphabet))
     else
         error("Please choose a valid vectortype: either bipolar or binary")
     end
@@ -53,14 +53,14 @@ function encode_sequence(sequence::String, encoded_alphabet::Dict; k=1::Int)
         for kmer_index in 1:k-1
             kmer_encoding = multiply(kmer_encoding, rotate(encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end-kmer_index]], kmer_index))
         end
-        encoding = aggregate(encoding, kmer_encoding)
+        #encoding = add(encoding, kmer_encoding)
+        encoding = add(encoding, kmer_encoding)
     end
-    if eltype(encoding) == Int
-        return sign.(encoding)
-    else
+    if typeof(encoding) == BitVector
         return encoding
+    elseif eltype(encoding) == Int
+        return sign.(encoding)
     end
-    #return encoding
 end
 
 #=

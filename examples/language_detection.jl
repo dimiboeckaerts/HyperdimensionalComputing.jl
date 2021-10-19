@@ -78,4 +78,19 @@ examples_preproc = [language_preprocessing(ex) for ex in examples]
 encoded_references = Dict((labelled_languages_df[idx, 1]=>encode_sequence(labelled_languages_df[idx, 2], alphabet_hv, k=3) for idx in 1:size(labelled_languages_df, 1)))
 encoded_examples = [encode_sequence(ex, alphabet_hv, k=3) for ex in examples_preproc]
 
+# predict
+println("Bipolar vector predictions:")
 println(cosine_predict(encoded_examples, encoded_references))
+
+
+# now let's try with binary hypervectors
+bit_alphabet_hv = encode_alphabet(vcat('a':'z', ' '), vectortype="binary")
+
+bit_encoded_references = Dict((labelled_languages_df[idx, 1]=>encode_sequence(labelled_languages_df[idx, 2], bit_alphabet_hv, k=3) for idx in 1:size(labelled_languages_df, 1)))
+bit_encoded_examples = [encode_sequence(ex, bit_alphabet_hv, k=5) for ex in examples_preproc]
+
+println("Binary vector predictions:")
+println(cosine_predict(bit_encoded_examples, bit_encoded_references))
+
+println("Ground truth:")
+println(example_labels)

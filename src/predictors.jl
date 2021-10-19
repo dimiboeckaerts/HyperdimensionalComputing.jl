@@ -12,6 +12,7 @@ Input:
 Output: a vector of class predictions in the same order as the input test encodings.\n
     
 DISCLAIMER: Currently every test encoding given to this function will be classified to the closest class, even when the true class is not in the train encodings.
+=> ALLE KLASSES EVEN VER VAN EXAMPLE => UNCLASSIFIED
 """
 function cosine_predict(test_encodings::Vector, train_encodings::Dict)
     predictions = Vector{String}()

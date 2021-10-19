@@ -3,7 +3,7 @@ module HyperdimensionalComputing
 using Distances
 
 export HYPERVECTOR_DIM, Hypervector, BipolarVector, BinaryVector
-export multiply, aggregate, rotate
+export multiply, rotate, add
 export encode_alphabet, encode_sequence
 export cosine_predict
 
