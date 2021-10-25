@@ -6,7 +6,7 @@ using CSV, DataFrames, HyperdimensionalComputing
 
 
 # set 26 letter alphabet and set up preprocessing to fit texts to this format
-alphabet_hv = encode_alphabet(vcat('a':'z', ' '))
+alphabet_hv = encode_items(vcat('a':'z', ' '))
 
 
 """
@@ -84,7 +84,7 @@ println(cosine_predict(encoded_examples, encoded_references))
 
 
 # now let's try with binary hypervectors
-bit_alphabet_hv = encode_alphabet(vcat('a':'z', ' '), vectortype="binary")
+bit_alphabet_hv = encode_items(vcat('a':'z', ' '), vectortype="binary")
 
 bit_encoded_references = Dict((labelled_languages_df[idx, 1]=>encode_sequence(labelled_languages_df[idx, 2], bit_alphabet_hv, k=3) for idx in 1:size(labelled_languages_df, 1)))
 bit_encoded_examples = [encode_sequence(ex, bit_alphabet_hv, k=5) for ex in examples_preproc]

@@ -7,8 +7,8 @@ export multiply, rotate, add
 export encode_alphabet, encode_sequence
 export cosine_predict
 
-include("operations.jl")
-include("encoding.jl")
+include("operators.jl")
+include("learning.jl")
 include("predictors.jl")
 
 end

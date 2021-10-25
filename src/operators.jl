@@ -22,10 +22,17 @@ end
 
 
 """
-This functions aggragates two binary hypervectors to a new one that is similar to both. For bipolar vectors, this is possible by summing the elements at each position and returning their sign.
+This functions aggragates two bipolar hypervectors to a new one that is similar to both. For bipolar vectors, this is possible by summing the elements at each position and returning their sign.
 """
 function add(hv1::Vector{Int}, hv2::Vector{Int})
-    return hv1 + hv2
+    return hv1 .+ hv2
+end
+
+"""
+This functions subtracts a bipolar hypervector from another one.
+"""
+function subtract(hv1::Vector{Int}, hv2::Vector{Int})
+    return hv1 .- hv2
 end
 
 
