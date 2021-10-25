@@ -2,21 +2,19 @@
 encoding.jl; This file implements functions to encode token-based data, be it alphabets, strings or full classes of text.
 =#
 
-
-const HYPERVECTOR_DIM = convert(Int16, 10000)
-
+const HYPERVECTOR_DIM = convert(Int16, 10_000)
 
 """
-This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.\n
+This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.
 
 Input: 
-    - a vector of chars denoting the alphabet, e.g. ['A', 'C', 'T', 'G'] or 'a':'z'.\n
-    - the type of vector, either bipolar or binary. By default this is a bipolar vector.\n
+    - a vector of chars denoting the alphabet, e.g. ['A', 'C', 'T', 'G'] or 'a':'z'.
+    - the type of vector, either bipolar or binary. By default this is a bipolar vector.
 Output: a dictionary with vector encodings for each token in the alphabet.
 """
 function encode_alphabet(alphabet::Vector{Char}; vectortype="bipolar")
     if vectortype=="bipolar"
-        return Dict((token=>rand(Int64[-1 1], HYPERVECTOR_DIM) for token in alphabet))
+        return Dict((token=>rand((-1, 1), HYPERVECTOR_DIM) for token in alphabet))
     elseif vectortype=="binary"
         return Dict((token=>convert(BitVector, rand(Bool, HYPERVECTOR_DIM)) for token in alphabet))
     else
@@ -26,21 +24,20 @@ end
 
 
 """
-This function creates a hyperdimensional vector for a given input sequence. It uses the encoded alphabet to go over the sequence elementwise or in k-mer blocks.\n
+This function creates a hyperdimensional vector for a given input sequence. 
+It uses the encoded alphabet to go over the sequence elementwise or in k-mer blocks.
 
 Input:
-    - a string of tokens to encode. \n
-    - a dictionary with vector encodings for each token in the alphabet.\n
-    - an integer k that defines the size of k-mers to aggregate over. This value defaults to 1.\n
-Output: a hypervector encoding for the sequence.\n
+    - a string of tokens to encode.
+    - a dictionary with vector encodings for each token in the alphabet.
+    - an integer k that defines the size of k-mers to aggregate over. This value defaults to 1.
+Output: a hypervector encoding for the sequence.
 
-DISCLAIMER: Removed the 'dim' argument from this function, as it has to be equal to the dimensionality of the alphabet hypervectors.
-
-Additional comments: \n
-    - kmer_encoding with a sum instead of mutiplication?\n
+Additional comments:
+    - kmer_encoding with a sum instead of mutiplication?
     - circshift over entire sequence with k=1.
 """
-function encode_sequence(sequence::String, encoded_alphabet::Dict; k=1::Int)
+function encode_sequence(sequence, encoded_alphabet::Dict; k::Int=1)
     # precompute the first kmer-encoding as the starting point as both ones() and zeros() vectors will cause issues with binary hypervectors
     encoding = encoded_alphabet[sequence[1:1+(k-1)][end]]
     for kmer_index in 1:k-1
@@ -65,28 +62,28 @@ end
 
 #=
 """
-This function loops over a matrix of hyperdimensional vectors and its associated\n
-classes and constructs a profile for each class by summing the corresponding HVs.\n
-\n
-Compared to traditional machine learning, this encoding of classes constitutes the\n
-'learning', as hyperdimensional vectors of all classes are combined via elementwise\n
-addition to learn a representation of the class a a whole.\n
-\n
-Input:\n
-- encoding_matrix: matrix with encodings (#encodings x dim)\n
-- classes: corresponding class labels (# encodings)\n
-- max_iterations: # of max iterations for retraining\n
-Output: dictionary of HVs for each of the classes\n
-\n
-Addition: don't subtract from all classes, only wrong one?\n
+This function loops over a matrix of hyperdimensional vectors and its associated
+classes and constructs a profile for each class by summing the corresponding HVs.
+
+Compared to traditional machine learning, this encoding of classes constitutes the
+'learning', as hyperdimensional vectors of all classes are combined via elementwise
+addition to learn a representation of the class a a whole.
+
+Input:
+- encoding_matrix: matrix with encodings (#encodings x dim)
+- classes: corresponding class labels (# encodings)
+- max_iterations: # of max iterations for retraining
+Output: dictionary of HVs for each of the classes
+
+Addition: don't subtract from all classes, only wrong one?
 Addition: rethink retraining for multiclass, more complex measure?
 """
-function encode_classes(encoding_matrix::Array, classes; max_iterations=25::Int)
+function encode_classes(encoding_matrix, classes; max_iterations::Int=25)
     # initial encodings
-    class_encodings = Dict()
+    class_encodings = Dict() # TO DO: to matrix
     for row in 1:size(encoding_matrix)[1]
         if classes[row] in keys(class_encodings)
-            class_encodings[classes[row]] += encoding_matrix[row,:]
+            class_encodings[classes[row]] .+= encoding_matrix[row,:] # NORMALIZE HERE?
         else
             class_encodings[classes[row]] = encoding_matrix[row,:]
         end
@@ -111,9 +108,9 @@ function encode_classes(encoding_matrix::Array, classes; max_iterations=25::Int)
                 count_wrong_iter += 1
                 for key in keys(class_encodings)
                     if key != actual_class
-                        class_encodings[key] -= encoding_matrix[row,:]
+                        class_encodings[key] .-= encoding_matrix[row,:]
                     else
-                        class_encodings[key] += encoding_matrix[row,:]
+                        class_encodings[key] .+= encoding_matrix[row,:]
                     end
                 end
             end
