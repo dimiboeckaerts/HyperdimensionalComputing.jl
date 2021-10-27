@@ -53,20 +53,21 @@ end
 BinaryHDV(n::Int=10_000) = BinaryHDV(rand(Bool, n))
 Base.similar(hdv::BinaryHDV) = BinaryHDV(similar(hdv.v))
 
-# GradedHDV are vectors in $[-1, 1]^n$, allowing for graded relations.
+# GradedBipolarHDV are vectors in $[-1, 1]^n$, allowing for graded relations.
 
-mutable struct GradedHDV{T<:Real} <: AbstractHDV{T}
+
+mutable struct GradedBipolarHDV{T<:Real} <: AbstractHDV{T}
     v::Vector{T}
     offset::Int
-    GradedHDV(v::AbstractVector, offset=0) = new{eltype(v)}(v, offset)
+    GradedBipolarHDV(v::AbstractVector, offset=0) = new{eltype(v)}(v, offset)
 end
 
-GradedHDV(T::Type, n::Int=10_000) = GradedHDV(rand((-oneunit(T), oneunit(T)), n))
-GradedHDV(n::Int=10_000) = GradedHDV(Float32, n)
+GradedBipolarHDV(T::Type, n::Int=10_000) = GradedBipolarHDV(2rand(T, n).-1)
+GradedBipolarHDV(n::Int=10_000) = GradedBipolarHDV(Float32, n)
 
-Base.similar(hdv::GradedHDV) = GradedHDV(similar(hdv.v))
+Base.similar(hdv::GradedBipolarHDV) = GradedBipolarHDV(similar(hdv.v))
 
-normalize!(hdv::BipolarHDV)= (hdv.v .= camp.(hdv.v, -1, 1))
+normalize!(hdv::GradedBipolarHDV)= (hdv.v .= camp.(hdv.v, -1, 1))
 
 # Finally, `RealHDV` contain real values, drawn from a standard normal distribution
 # by default.
@@ -117,7 +118,7 @@ function aggr!(r::RealHDV, hdv1::RealHDV, hdv2::RealHDV)
     return r
 end
 
-aggr!(r::GradedHDV, hdv1::GradedHDV, hdv2::GradedHDV) = (r .= max.(hdv1, hdv2))
+aggr!(r::GradedBipolarHDV, x::GradedBipolarHDV, y::GradedBipolarHDV) = (@. r = x * y / (x * y) + (1-x) * (1-y))
 
 #= 
 
@@ -131,7 +132,7 @@ Base.:*(hdv1::AbstractHDV, hdv2::AbstractHDV) = bind(hdv1, hdv2)
 bind!(r::BipolarHDV, hdv1::BipolarHDV, hdv2::BipolarHDV) = (r .= hdv1 .* hdv2)
 bind!(r::RealHDV, hdv1::RealHDV, hdv2::RealHDV) = (r .= hdv1 .* hdv2)
 bind!(r::BinaryHDV, hdv1::BinaryHDV, hdv2::BinaryHDV) = (r .= hdv1 .⊻ hdv2)
-bind!(r::GradedHDV, hdv1::GradedHDV, hdv2::GradedHDV) = (r .= min.(hdv1, hdv2))
+bind!(r::GradedBipolarHDV, x::GradedBipolarHDV, y::GradedBipolarHDV) = (@. r = x + y - x * y)
 
 #=
 ### Permutation
