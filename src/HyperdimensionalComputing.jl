@@ -2,11 +2,10 @@ module HyperdimensionalComputing
 
 using Distances
 
-export HYPERVECTOR_DIM, Hypervector, BipolarVector, BinaryVector
-export multiply, rotate, add
-export encode_alphabet, encode_sequence
-export cosine_predict
+export AbstractHDV, BinaryHDV, BipolarHDV, GradedBipolarHDV, RealHDV
 
+
+include("vectors.jl")
 include("operations.jl")
 include("encoding.jl")
 include("predictors.jl")
