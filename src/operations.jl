@@ -46,11 +46,13 @@ end
 # AGGREGATION
 # -----------
 
+# TODO: implement offsetadd/offsetprod
+
 aggregate(hdvs::AbstractVector{<:AbstractHDV}) = aggregate!(similar(first(hdvs)), hdvs)
 
 #aggregate(hdvs::AbstractHDV...) = aggregate!(similar(first(hdvs)), )
 
-Base.:+(hdv1::AbstractHDV, hdv2::AbstractHDV) = aggregate(similar(hdv1, hdv2))
+Base.:+(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = aggregate!(similar(hdv1), (hdv1, hdv2))
 
 # aggregation of bipolar vectors uses the majority rule
 # TODO: unsafe for offsets!
@@ -127,6 +129,45 @@ end
 # BINDING
 # -------
 
+
+bind(hdvs::AbstractVector{<:AbstractHDV}) = bind!(similar(first(hdvs)), hdvs)
+Base.:*(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = bind!(similar(hdv1), (hdv1, hdv2))
+
+function bind!(r::AbstractHDV, hdvs)
+    fill!(r.v, one(eltype(r)))
+    foldl(hdvs, init=r.v) do acc, value
+        if value.offset == 0
+            acc .= acc .* value.v
+        else
+            acc .= acc .* value
+        end
+    end
+    return r
+end
+
+function bind!(r::BinaryHDV, hdvs)
+    r.v .= false
+    foldl(hdvs, init=r.v) do acc, value
+        if value.offset == 0
+            acc .= acc .⊻ value.v
+        else
+            acc .= acc .⊻ value
+        end
+    end
+    return r
+end
+
+function bind!(r::GradedBipolarHDV, hdvs)
+    fill!(r.v, zero(eltype(r)))
+    foldl(hdvs, init=r.v) do acc, value
+        if value.offset == 0
+            acc .= fuzzy_xor.(acc, value.v)
+        else
+            acc .= fuzzy_xor.(acc, value)
+        end
+    end
+    return r
+end
 
 # SHIFTING
 # --------

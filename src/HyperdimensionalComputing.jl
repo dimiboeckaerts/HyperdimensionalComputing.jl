@@ -3,7 +3,7 @@ module HyperdimensionalComputing
 using Distances
 
 export AbstractHDV, BinaryHDV, BipolarHDV, GradedBipolarHDV, RealHDV
-export aggregate, aggregate!
+export aggregate, aggregate!, bind, bind!
 
 
 include("vectors.jl")
