@@ -6,12 +6,14 @@ abstract type AbstractHDV{T} <: AbstractVector{T} end
 
 # taking the indices takes a long time=> remove!
 
-Base.getindex(hdv::AbstractHDV, i) = hdv.v[i]
+Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset)%length(hdv)+1]
 Base.size(hdv::AbstractHDV) = size(hdv.v)
-Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[i] = val)
+Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset)%length(hdv)+1] = val)
 normalize!(::AbstractHDV) = nothing  ## vectors have no normalization by default
 
 getvector(hdv::AbstractHDV) = hdv.v
+
+Base.sum(hdv::AbstractHDV) = sum(hdv.v)
 
 # We always provide a constructor with optinal dimensionality (n=10,000 by default) and
 # a method `similar`.
