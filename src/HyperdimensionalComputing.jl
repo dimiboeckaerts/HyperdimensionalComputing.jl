@@ -2,7 +2,8 @@ module HyperdimensionalComputing
 
 using Distances
 
-export AbstractHDV, BinaryHDV, BipolarHDV, GradedBipolarHDV, RealHDV
+export AbstractHDV, BinaryHDV, BipolarHDV,
+    GradedBipolarHDV, RealHDV, GradedHDV
 export aggregate, aggregate!, bind, bind!
 
 

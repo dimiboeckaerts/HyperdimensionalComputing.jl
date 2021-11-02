@@ -6,9 +6,9 @@ abstract type AbstractHDV{T} <: AbstractVector{T} end
 
 # taking the indices takes a long time=> remove!
 
-Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset)%length(hdv)+1]
+@inline Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset)%length(hdv)+1]
 Base.size(hdv::AbstractHDV) = size(hdv.v)
-Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset)%length(hdv)+1] = val)
+@inline Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset)%length(hdv)+1] = val)
 normalize!(::AbstractHDV) = nothing  ## vectors have no normalization by default
 
 getvector(hdv::AbstractHDV) = hdv.v
@@ -42,7 +42,6 @@ Base.similar(hdv::BinaryHDV) = BinaryHDV(similar(hdv.v))
 
 # GradedBipolarHDV are vectors in $[-1, 1]^n$, allowing for graded relations.
 
-
 mutable struct GradedBipolarHDV{T<:Real} <: AbstractHDV{T}
     v::Vector{T}
     offset::Int
@@ -50,11 +49,25 @@ mutable struct GradedBipolarHDV{T<:Real} <: AbstractHDV{T}
 end
 
 GradedBipolarHDV(T::Type, n::Int=10_000) = GradedBipolarHDV(2rand(T, n) .- 1)
-GradedBipolarHDV(n::Int=10_000) = GradedBipolarHDV(Float32, n)
+GradedBipolarHDV(n::Int=10_000) = GradedBipolarHDV(Float64, n)
 
 Base.similar(hdv::GradedBipolarHDV) = GradedBipolarHDV(similar(hdv.v))
 
 normalize!(hdv::GradedBipolarHDV)= (hdv.v .= camp.(hdv.v, -1, 1))
+
+mutable struct GradedHDV{T<:Real} <: AbstractHDV{T}
+    v::Vector{T}
+    offset::Int
+    GradedHDV(v::AbstractVector, offset=0) = new{eltype(v)}(v, offset)
+end
+
+GradedHDV(T::Type, n::Int=10_000) = GradedHDV(rand(T, n))
+GradedHDV(n::Int=10_000) = GradedHDV(Float64, n)
+
+Base.similar(hdv::GradedHDV) = GradedHDV(similar(hdv.v))
+
+normalize!(hdv::GradedHDV)= (hdv.v .= camp.(hdv.v, 0, 1))
+
 
 # Finally, `RealHDV` contain real values, drawn from a standard normal distribution
 # by default.
@@ -65,7 +78,7 @@ mutable struct RealHDV{T<:Real} <: AbstractHDV{T}
     RealHDV(v::Vector{T}, offset=0) where {T} = new{T}(v, offset)
 end
 
-RealHDV(n::Int=10_000) = RealHDV(randn(n), 1.0)
+RealHDV(n::Int=10_000) = RealHDV(randn(n), 0)
 
 normalize!(hdv::RealHDV) = (hdv.v .*=  √(length(hdv) / sum(abs2, hdv.v)))
 
