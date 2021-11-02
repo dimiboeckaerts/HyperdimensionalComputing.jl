@@ -40,6 +40,8 @@ end
 BinaryHDV(n::Int=10_000) = BinaryHDV(rand(Bool, n))
 Base.similar(hdv::BinaryHDV) = BinaryHDV(similar(hdv.v))
 
+# TODO: initialize graded vectors to not engulf the whole spectrum
+
 # GradedBipolarHDV are vectors in $[-1, 1]^n$, allowing for graded relations.
 
 mutable struct GradedBipolarHDV{T<:Real} <: AbstractHDV{T}

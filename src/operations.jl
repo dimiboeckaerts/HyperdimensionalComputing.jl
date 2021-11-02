@@ -79,8 +79,6 @@ end
 # AGGREGATION
 # -----------
 
-# TODO: implement offsetadd/offsetprod
-
 aggregate(hdvs::AbstractVector{<:AbstractHDV}) = aggregate!(similar(first(hdvs)), hdvs)
 
 #aggregate(hdvs::AbstractHDV...) = aggregate!(similar(first(hdvs)), )
@@ -104,7 +102,7 @@ function aggregate!(r::BinaryHDV, hdvs)
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
     # use majority rule
-    r.v .= counts .> length(hdvs) / 2
+    r.v .= counts .> (length(hdvs) ÷ 2)
     return r
 end
 

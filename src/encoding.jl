@@ -2,9 +2,47 @@
 encoding.jl; This file implements functions to encode token-based data, be it alphabets, strings or full classes of text.
 =#
 
+function sequence_embedding(::Type{<:AbstractHDV}, sequence, token_vectors, w=3)
+    result = similar(first(token_vectors))
+    fill!(result.v, zero(eltype(result)))
+    tmp = similar(result)
+    n = length(sequence)
+    for i in 1:n-w
+        fill!(tmp.v, neutralbind(tmp))
+        for k in (w-1):-1:0
+            v = token_vectors[sequence[i+k]]
+            offsetcombine!(tmp.v, bindfun(tmp), tmp.v, v.v, v.offset + k)
+        end
+        offsetcombine!(result.v, aggfun(result), result.v, tmp.v, 0)
+    end
+    normalize!(result, length(sequence)-w)
+    return result
+end
 
-const HYPERVECTOR_DIM = convert(Int16, 10000)
+function sequence_embedding(::Type{<:BinaryHDV}, sequence, token_vectors, w=3)
+    count = zeros(Int, length(first(token_vectors)))
+    result = similar(first(token_vectors))
+    fill!(result.v, zero(eltype(result)))
+    tmp = similar(result)
+    n = length(sequence)
+    for i in 1:n-w
+        fill!(tmp.v, neutralbind(tmp))
+        for k in (w-1):-1:0
+            v = token_vectors[sequence[i+k]]
+            offsetcombine!(tmp.v, bindfun(tmp), tmp.v, v.v, v.offset + k)
+        end
+        offsetcombine!(count, +, count, tmp.v, 0)
+    end
+    result.v = count .> div(n-w, 2)
+    return result
+end
 
+
+sequence_embedding(sequence, token_vectors::AbstractVector{V}, args...) where {V<:AbstractHDV} = 
+                sequence_embedding(V, sequence, token_vectors, args...)
+    
+
+#=
 
 """
 This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.\n
@@ -138,4 +176,6 @@ function encode_classes(encoding_matrix::Array, classes; max_iterations=25::Int)
     println("number of wrong class assignments: ", count_wrong)
     return class_encodings
 end
+=#
+
 =#
