@@ -6,9 +6,9 @@ abstract type AbstractHDV{T} <: AbstractVector{T} end
 
 # taking the indices takes a long time=> remove!
 
-@inline Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset)%length(hdv)+1]
+@inline Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset-1)%length(hdv)+1]
 Base.size(hdv::AbstractHDV) = size(hdv.v)
-@inline Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset)%length(hdv)+1] = val)
+@inline Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset-1)%length(hdv)+1] = val)
 normalize!(::AbstractHDV) = nothing  ## vectors have no normalization by default
 
 getvector(hdv::AbstractHDV) = hdv.v
@@ -30,6 +30,8 @@ Base.similar(hdv::BipolarHDV) = BipolarHDV(similar(hdv.v))
 normalize!(hdv::BipolarHDV) = (hdv.v .= sign.(hdv.v))
 
 # `BinaryHDV` contain binary vectors.
+
+# TODO: this should probabily just make use of a vector of ints...
 
 mutable struct BinaryHDV <: AbstractHDV{Bool}
     v::BitVector
@@ -81,6 +83,7 @@ mutable struct RealHDV{T<:Real} <: AbstractHDV{T}
 end
 
 RealHDV(n::Int=10_000) = RealHDV(randn(n), 0)
+RealHDV(T::Type{<:Real}, n::Int=10_000) = RealHDV(T.(randn(n)), 0)
 
 normalize!(hdv::RealHDV) = (hdv.v .*=  √(length(hdv) / sum(abs2, hdv.v)))
 
