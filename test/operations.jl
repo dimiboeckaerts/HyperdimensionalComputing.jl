@@ -30,4 +30,52 @@
 
         # add test permutations
     end
+
+    @testset "GradedBipolarHDV" begin
+        vectors = [[0, 0, 0, 0.0],
+                   [0.8, 0.1, -0.3, 0.2],
+                   [-1.0, 1, 1, -1]]
+
+        hdvs = GradedBipolarHDV.(vectors)
+
+        @test hdvs[1] + hdvs[2] ≈ hdvs[2]
+        @test aggregate(hdvs) ≈ last(hdvs)
+
+        @test hdvs[1] * hdvs[2] ≈ hdvs[1]
+        @test bind(hdvs) ≈ BipolarHDV([0.0, 0.0, 0.0, 0.0])
+
+        # add test permutations
+    end
+
+    @testset "GradedHDV" begin
+        vectors = [[0.5, 0.5, 0.5, 0.5],
+                   [0.8, 0.1, 0.3, 0.2],
+                   [1.0, 0, 1, 0]]
+
+        hdvs = GradedHDV.(vectors)
+
+        @test hdvs[1] + hdvs[2] ≈ hdvs[2]
+        @test aggregate(hdvs) ≈ last(hdvs)
+
+        @test hdvs[1] * hdvs[2] ≈ hdvs[1]
+        @test bind(hdvs) ≈ hdvs[1]
+
+        # add test permutations
+    end
+
+    @testset "RealHDV" begin
+        vectors = [[0, 0, 0, 0.0],
+                   [0.8, 0.1, -0.3, 0.2],
+                   [-1.0, 1, 1, -1]]
+
+        hdvs = RealHDV.(vectors)
+
+        @test hdvs[1] + hdvs[2] ≈ hdvs[2] / sqrt(2)
+        @test aggregate(hdvs) ≈ RealHDV(sum(vectors) / √(3))
+
+        @test hdvs[1] * hdvs[2] ≈ hdvs[1]
+        @test bind(hdvs) ≈ hdvs[1] .* hdvs[2] .* hdvs[3]
+
+        # add test permutations
+    end
 end
