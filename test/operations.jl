@@ -12,7 +12,13 @@
         @test (hdvs[1] * hdvs[2] .== [-1, -1, -1, -1]) |> all
         @test bind(hdvs) == BipolarHDV([1, -1, -1, 1])
 
-        # add test permutations
+        hdv = first(hdvs)
+        v = first(vectors) |> copy
+
+        @test Π(hdv, 2) == circshift(v, 2)
+        @test Π!(hdv, 2) == circshift(v, 2)
+        @test resetoffset!(hdv) == v
+        @test hdv.v == v 
     end
 
     @testset "Binary" begin
@@ -28,7 +34,13 @@
         @test (hdvs[1] * hdvs[2] .== [false, false, false, false]) |> all
         @test bind(hdvs[2:3]) == BinaryHDV([true, true, true, true])
 
-        # add test permutations
+        hdv = first(hdvs)
+        v = first(vectors) |> copy
+
+        @test Π(hdv, 2) == circshift(v, 2)
+        @test Π!(hdv, 2) == circshift(v, 2)
+        @test resetoffset!(hdv) == v
+        @test hdv.v == v 
     end
 
     @testset "GradedBipolarHDV" begin
@@ -44,7 +56,14 @@
         @test hdvs[1] * hdvs[2] ≈ hdvs[1]
         @test bind(hdvs) ≈ BipolarHDV([0.0, 0.0, 0.0, 0.0])
 
-        # add test permutations
+
+        hdv = first(hdvs)
+        v = first(vectors) |> copy
+
+        @test Π(hdv, 2) == circshift(v, 2)
+        @test Π!(hdv, 2) == circshift(v, 2)
+        @test resetoffset!(hdv) == v
+        @test hdv.v == v 
     end
 
     @testset "GradedHDV" begin
@@ -60,7 +79,13 @@
         @test hdvs[1] * hdvs[2] ≈ hdvs[1]
         @test bind(hdvs) ≈ hdvs[1]
 
-        # add test permutations
+        hdv = first(hdvs)
+        v = first(vectors) |> copy
+
+        @test Π(hdv, 2) == circshift(v, 2)
+        @test Π!(hdv, 2) == circshift(v, 2)
+        @test resetoffset!(hdv) == v
+        @test hdv.v == v 
     end
 
     @testset "RealHDV" begin
@@ -76,6 +101,13 @@
         @test hdvs[1] * hdvs[2] ≈ hdvs[1]
         @test bind(hdvs) ≈ hdvs[1] .* hdvs[2] .* hdvs[3]
 
-        # add test permutations
+
+        hdv = first(hdvs)
+        v = first(vectors) |> copy
+
+        @test Π(hdv, 2) == circshift(v, 2)
+        @test Π!(hdv, 2) == circshift(v, 2)
+        @test resetoffset!(hdv) == v
+        @test hdv.v == v 
     end
 end
