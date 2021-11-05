@@ -76,6 +76,22 @@ end
     return r
 end
 
+@inline function offsetcombine(f, x::V, y::V, offset=0) where {V<:AbstractVecOrMat}
+    @assert length(x) == length(y)
+    r = similar(x)
+    n = length(r)
+    if offset==0
+        r .= f.(x, y)
+    else
+        i′ = offset
+        for i in 1:n
+            i′ = i′ == n ? 1 : i′ + 1
+            @inbounds r[i] = f(x[i], y[i′])
+        end
+    end
+    return r
+end
+
 # AGGREGATION
 # -----------
 
@@ -136,22 +152,24 @@ end
 # SHIFTING
 # --------
 
-#=
-Base.circshift!(hdv::AbstractHDV, k) = (hdv.offset += k)
 
-function Base.circshift(hdv::AbstractHDV, k)
-    hdv = copy(hdv)
-    hdv.offset += k
-    return hdv
-end
-=#
-
-function Π(hdv::AbstractHDV, k)
-    hdv = copy(hdv)
+function Base.circshift!(hdv::AbstractHDV, k)
     hdv.offset += k
     return hdv
 end
 
-function Π(hdv::RealHDV, k)
-    return RealHDV(hdv.v, hdv.offset+k)
+for hdvt in [:BipolarHDV, :BinaryHDV, :GradedBipolarHDV, :GradedHDV, :RealHDV]
+    eval(quote
+        Base.circshift(hdv::$hdvt, k::Integer) = $(hdvt)(hdv.v, hdv.offset + k)
+    end)
+end
+
+Π(hdv::AbstractHDV, k) = circshift(hdv, k)
+Π!(hdv::AbstractHDV, k) = circshift!(hdv, k)
+
+function resetoffset!(hdv::AbstractHDV)
+    hdv.offset == 0 && return hdv
+    v = circshift(hdv.v, -hdv.offset)
+    hdv.offset = 0
+    return hdv
 end

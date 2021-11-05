@@ -4,8 +4,8 @@ using Distances
 
 export AbstractHDV, BinaryHDV, BipolarHDV,
     GradedBipolarHDV, RealHDV, GradedHDV
-export aggregate, aggregate!, bind, bind!
-export sequence_embedding
+export aggregate, aggregate!, bind, bind!, Π, Π!, resetoffset!
+export sequence_embedding, sequence_embedding!
 
 
 include("vectors.jl")
