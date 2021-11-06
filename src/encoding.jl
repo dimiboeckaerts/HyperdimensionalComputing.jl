@@ -2,8 +2,47 @@
 encoding.jl; This file implements functions to encode token-based data, be it alphabets, strings or full classes of text.
 =#
 
-function sequence_embedding(::Type{<:AbstractHDV}, sequence, token_vectors, w=3)
-    result = similar(first(token_vectors))
+# SEQUENCE EMBEDDING
+
+# Maybe solve with @generated?
+# could be using a nested dictionary using fold
+
+
+function ngrams_recursion(d::Dict{K,V}) where {K,V<:Int}
+    result = Dict{K,Dict{K,V}}()
+    for c in keys(d)
+        result[c] = Dict(k=>v+Int(c) for (k, v) in d)
+    end
+    return result
+end
+
+function ngrams_recursion(d::Dict{K,V}, hdvs) where {K,V<:AbstractHDV}
+    result = Dict{K,Dict{K,V}}()
+    for c in keys(d)
+        hdv = hdvs[c]
+        result[c] = Dict(k=> hdv * Π(v, 1) for (k, v) in d)
+    end
+    return result
+end
+
+function ngrams_recursion(d::Dict{K,V}, args...) where {K,V<:Dict}
+    result = Dict{K,Dict{K,V}}()
+    for (c, dc) in d
+        result[c] = ngrams_recursion(dc, args...)
+    end
+    return result
+end
+
+get_gram_embedding(sequence, i, embeddings::Dict{K,V}) where {K,V<:Dict} = get_gram_embedding(sequence, i+1, embeddings[sequence[i]])
+get_gram_embedding(sequence, i, embeddings::Dict{K,V}) where {K,V<:AbstractHDV} = embeddings[sequence[i]]
+
+
+
+
+ngrams(sequence, K) = ngrams(NTuple{K,eltype(sequence)}, sequence, K)
+ngrams(T::Type, sequence, K) = [T(sequence[i+k] for k in 0:K-1) for i in 1:length(sequence)-K+1]
+
+function sequence_embedding!(result::AbstractHDV, sequence, token_vectors, w=3)
     fill!(result.v, zero(eltype(result)))
     tmp = similar(result)
     n = length(sequence)
@@ -19,9 +58,8 @@ function sequence_embedding(::Type{<:AbstractHDV}, sequence, token_vectors, w=3)
     return result
 end
 
-function sequence_embedding(::Type{<:BinaryHDV}, sequence, token_vectors, w=3)
-    count = zeros(Int, length(first(token_vectors)))
-    result = similar(first(token_vectors))
+function sequence_embedding!(result::BinaryHDV, sequence, token_vectors, w=3)
+    count = zeros(Int, length(result))
     fill!(result.v, zero(eltype(result)))
     tmp = similar(result)
     n = length(sequence)
@@ -39,8 +77,10 @@ end
 
 
 sequence_embedding(sequence, token_vectors::AbstractVector{V}, args...) where {V<:AbstractHDV} = 
-                sequence_embedding(V, sequence, token_vectors, args...)
+                sequence_embedding!(similar(first(token_vectors)), sequence, token_vectors, args...)
     
+sequence_embedding(sequence, token_vectors::Dict{T,V}, args...) where {T,V<:AbstractHDV} = 
+                sequence_embedding!(similar(first(token_vectors)[2]), sequence, token_vectors, args...)
 
 #=
 

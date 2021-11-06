@@ -51,7 +51,7 @@ neutralbind(hdv::GradedBipolarHDV) = -one(eltype(hdv))
 
 normalize!(::AbstractHDV, n) = nothing
 normalize!(hdv::RealHDV, n) = (hdv.v ./= sqrt(n))
-normalize!(hdv::BipolarHDV, n) = (hdv.v .= sign.(hdv.v))
+#normalize!(hdv::BipolarHDV, n) = (hdv.v .= sign.(hdv.v))
 
 function elementreduce!(f, itr, init)
     return foldl(itr; init) do acc, value
