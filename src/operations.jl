@@ -67,7 +67,7 @@ end
     if offset==0
         r .= f.(x, y)
     else
-        i′ = offset
+        i′ = n - offset
         for i in 1:n
             i′ = i′ == n ? 1 : i′ + 1
             @inbounds r[i] = f(x[i], y[i′])
@@ -83,7 +83,7 @@ end
     if offset==0
         r .= f.(x, y)
     else
-        i′ = offset
+        i′ = n - offset
         for i in 1:n
             i′ = i′ == n ? 1 : i′ + 1
             @inbounds r[i] = f(x[i], y[i′])

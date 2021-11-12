@@ -1,4 +1,23 @@
 @testset "operations" begin
+
+    @testset "offsetcombine" begin
+        r = rand(10)
+        x = rand(10)
+        y = rand(10)
+
+        @test offsetcombine!(r, +, x, y) ≈ x .+ y
+        @test offsetcombine!(r, *, x, y) ≈ x .* y
+
+        @test offsetcombine!(r, +, x, y, 2) ≈ x .+ circshift(y, 2)
+        @test offsetcombine!(r, *, x, y, 2) ≈ x .* circshift(y, 2)
+
+        @test offsetcombine(+, x, y) ≈ x .+ y
+        @test offsetcombine(*, x, y) ≈ x .* y
+
+        @test offsetcombine(+, x, y, 2) ≈ x .+ circshift(y, 2)
+        @test offsetcombine(*, x, y, 2) ≈ x .* circshift(y, 2)
+    end
+
     @testset "Bipolar" begin
         vectors = [[-1, 1, 1, -1],
                    [1, -1, -1, 1],

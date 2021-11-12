@@ -4,6 +4,7 @@ using Distances
 
 export AbstractHDV, BinaryHDV, BipolarHDV,
     GradedBipolarHDV, RealHDV, GradedHDV
+export offsetcombine, offsetcombine!
 export aggregate, aggregate!, bind, bind!, Π, Π!, resetoffset!
 export sequence_embedding, sequence_embedding!
 
