@@ -2,13 +2,16 @@
 vectors.jl; Implements the interface for HDV
 =#
 
+validindex(i, n) = i < 1 ? validindex(i + n, n) : (i > n ? validindex(i - n, n) : i)
+
+
 abstract type AbstractHDV{T} <: AbstractVector{T} end
 
 # taking the indices takes a long time=> remove!
 
-@inline Base.getindex(hdv::AbstractHDV, i) = hdv.v[(i+hdv.offset-1)%length(hdv)+1]
+@inline Base.getindex(hdv::AbstractHDV, i) = @inbounds hdv.v[validindex(i-hdv.offset, length(hdv))]
 Base.size(hdv::AbstractHDV) = size(hdv.v)
-@inline Base.setindex!(hdv::AbstractHDV, val, i) = (hdv.v[(i+hdv.offset-1)%length(hdv)+1] = val)
+@inline Base.setindex!(hdv::AbstractHDV, val, i) = @inbounds (hdv.v[validindex(i-hdv.offset, length(hdv))] = val)
 normalize!(::AbstractHDV) = nothing  ## vectors have no normalization by default
 
 getvector(hdv::AbstractHDV) = hdv.v

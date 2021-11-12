@@ -15,9 +15,9 @@ const n = 10
 
         hdv_offset = BipolarHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
-        @test [hdv[i+2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
-        hdv_offset[3] = 0
-        @test hdv[5] == 0
+        @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
+        hdv_offset[5] = 0
+        @test hdv[3] == 0
     end
 
     @testset "BinaryHDV" begin
@@ -33,9 +33,9 @@ const n = 10
 
         hdv_offset = BinaryHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
-        @test [hdv[i+2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
-        hdv_offset[3] = 0
-        @test hdv[5] == 0
+        @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
+        hdv_offset[5] = 0
+        @test hdv[3] == 0
     end
 
     @testset "GradedBipolarHDV" begin
@@ -53,9 +53,9 @@ const n = 10
 
         hdv_offset = GradedBipolarHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
-        @test [hdv[i+2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
-        hdv_offset[3] = 0
-        @test hdv[5] == 0
+        @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
+        hdv_offset[5] = 0
+        @test hdv[3] == 0
     end
 
     @testset "GradedHDV" begin
@@ -73,9 +73,9 @@ const n = 10
 
         hdv_offset = GradedHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
-        @test [hdv[i+2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
-        hdv_offset[3] = 0
-        @test hdv[5] == 0
+        @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
+        hdv_offset[5] = 0
+        @test hdv[3] == 0
     end
 
 
@@ -94,8 +94,8 @@ const n = 10
 
         hdv_offset = RealHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
-        @test [hdv[i+2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
-        hdv_offset[3] = 0
-        @test hdv[5] == 0
+        @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
+        hdv_offset[5] = 0
+        @test hdv[3] == 0
     end
 end
