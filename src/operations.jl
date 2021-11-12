@@ -33,7 +33,7 @@ three_pi(x, y) = abs(x-y)==1 ? zero(x) : x * y / (x * y + (one(x) - x) * (one(y)
 fuzzy_xor(x, y) = (one(x)-x) * y + x * (one(y)-y)
 
 three_pi_bipol(x, y) = grad2bipol(three_pi(bipol2grad(x), bipol2grad(y)))
-fuzzy_xor_bipol(x, y) = grad2bipol(fuzzy_xor(bipol2grad(x), bipol2grad(y)))
+fuzzy_xor_bipol(x, y) = grad2bipol(fuzzy_xor(bipol2grad(x), bipol2grad(y)))  # currently just *
 
 aggfun(::AbstractHDV) = +
 aggfun(::GradedHDV) = three_pi
