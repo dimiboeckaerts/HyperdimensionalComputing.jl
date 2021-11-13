@@ -4,6 +4,12 @@ vectors.jl; Implements the interface for HDV
 
 validindex(i, n) = i < 1 ? validindex(i + n, n) : (i > n ? validindex(i - n, n) : i)
 
+# random numbers in an interval [l, u]
+@inline function randinterval(T::Type, n, l, u)
+    @assert l < u "The lower bound should be belowe the upper bound"
+    return rand(T, n) .* T(u - l) .+ T(l)
+end
+
 
 abstract type AbstractHDV{T} <: AbstractVector{T} end
 
@@ -55,8 +61,8 @@ mutable struct GradedBipolarHDV{T<:Real} <: AbstractHDV{T}
     GradedBipolarHDV(v::AbstractVector, offset=0) = new{eltype(v)}(v, offset)
 end
 
-GradedBipolarHDV(T::Type, n::Int=10_000) = GradedBipolarHDV(2rand(T, n) .- 1)
-GradedBipolarHDV(n::Int=10_000) = GradedBipolarHDV(Float64, n)
+GradedBipolarHDV(T::Type, n::Int=10_000; l=-0.8, u=0.8) = GradedBipolarHDV(randinterval(T, n, l, u))
+GradedBipolarHDV(n::Int=10_00; l=-0.8, u=0.8) = GradedBipolarHDV(Float32, n; l, u)
 
 Base.similar(hdv::GradedBipolarHDV) = GradedBipolarHDV(similar(hdv.v))
 
@@ -68,8 +74,8 @@ mutable struct GradedHDV{T<:Real} <: AbstractHDV{T}
     GradedHDV(v::AbstractVector, offset=0) = new{eltype(v)}(v, offset)
 end
 
-GradedHDV(T::Type, n::Int=10_000) = GradedHDV(rand(T, n))
-GradedHDV(n::Int=10_000) = GradedHDV(Float64, n)
+GradedHDV(T::Type, n::Int=10_000; l=0.2, u=0.8) = GradedHDV(randinterval(T, n, l, u))
+GradedHDV(n::Int=10_000; l=0.2, u=0.8) = GradedHDV(Float32, n; l, u)
 
 Base.similar(hdv::GradedHDV) = GradedHDV(similar(hdv.v))
 

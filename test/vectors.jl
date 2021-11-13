@@ -51,6 +51,8 @@ const n = 10
         @test sum(hdv) ≈ sum(hdv.v)
         @test eltype(GradedBipolarHDV(Float32, n)) <: Float32
 
+        @test all(-0.4 .≤ GradedBipolarHDV(l=-0.4, u=0.6) .≤ 0.6)
+
         hdv_offset = GradedBipolarHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
         @test [hdv[i-2] for i in 1:5] ≈ [hdv_offset[i] for i in 1:5]
@@ -70,6 +72,8 @@ const n = 10
         @test similar(hdv) isa GradedHDV
         @test sum(hdv) ≈ sum(hdv.v)
         @test eltype(GradedHDV(Float32, n)) <: Float32
+
+        @test all(0.4 .≤ GradedHDV(l=0.4, u=0.6) .≤ 0.6)
 
         hdv_offset = GradedHDV(hdv.v, 2)
         @test hdv_offset.offset == 2
