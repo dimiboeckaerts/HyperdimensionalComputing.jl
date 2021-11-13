@@ -121,5 +121,5 @@ sequence_embedding(sequence, token_vectors::Dict{T,V}, args...) where {T,V<:Abst
                 sequence_embedding!(similar(first(token_vectors)[2]), sequence, token_vectors, args...)
 
 sequence_embedding(sequence, ngrams_embedding::NGrams, args...) = 
-                sequence_embedding!(similar_vector(ngrams_embedding), sequence, token_vectors, args...)
+                sequence_embedding!(similar_vector(ngrams_embedding), sequence, ngrams_embedding, args...)
 
