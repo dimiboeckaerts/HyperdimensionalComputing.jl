@@ -16,8 +16,16 @@ abstract type AbstractHDV{T} <: AbstractVector{T} end
 # taking the indices takes a long time=> remove!
 
 @inline Base.getindex(hdv::AbstractHDV, i) = @inbounds hdv.v[validindex(i-hdv.offset, length(hdv))] .|> normalizer(hdv)
+
 Base.size(hdv::AbstractHDV) = size(hdv.v)
+
 @inline Base.setindex!(hdv::AbstractHDV, val, i) = @inbounds (hdv.v[validindex(i-hdv.offset, length(hdv))] = val)
+
+#=
+Base.iterate(hdv::AbstractHDV, state=1) = state > length(hdv) ?
+                                                    nothing :
+                                            (normalizer(hdv)(hdv.v[validindex(i-hdv.offset, length(hdv))]), state+1)
+=#
 
 normalizer(::AbstractHDV) = identity  # normalizer does nothing by default
 
@@ -104,7 +112,7 @@ Base.similar(hdv::GradedHDV) = GradedHDV(similar(hdv.v), 0, 0)
 mutable struct RealHDV{T<:Real} <: AbstractHDV{T}
     v::Vector{T}
     offset::Int
-    m::Int
+    m::Float64
     RealHDV(v::Vector{T}, offset=0,m=1) where {T} = new{T}(v,offset,m)
 end
 

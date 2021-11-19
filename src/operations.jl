@@ -101,27 +101,21 @@ aggregate(hdvs::AbstractVector{<:AbstractHDV}) = aggregate!(similar(first(hdvs))
 
 Base.:+(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = aggregate!(similar(hdv1), (hdv1, hdv2))
 
-function aggregate!(r::AbstractHDV, hdvs)
-    fill!(r.v, zero(eltype(r)))
+clearhdv!(r::AbstractHDV) = fill!(r.v, zero(eltype(r)))
+clearhdv!(r::GradedHDV) = fill!(r.v, one(eltype(r))/2)
+
+function aggregate!(r::AbstractHDV, hdvs; clear=true, norm=false)
+    clear && clearhdv!(r)
     aggr = aggfun(r)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
-    r.m = length(hdvs)  # TODO: weights
+    r.m += length(hdvs)  # TODO: weights
+    norm && normalize!(r)
     return r
 end
 
-function aggregate!(r::GradedHDV, hdvs)
-    # neutral element is 0.5 for graded
-    fill!(r.v, one(eltype(r))/2)
-    aggr = aggfun(r)
-    foldl(hdvs, init=r.v) do acc, value
-        offsetcombine!(acc, aggr, acc, value.v, value.offset)
-    end
-    r.m = length(hdvs)
-    return r
-end
-
+aggregatewith!(r::AbstractHDV, hdvs; kwargs...) = aggregate!(r, hdvs; clear=false, kwargs...)
 
 # BINDING
 # -------

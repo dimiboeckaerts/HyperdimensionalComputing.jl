@@ -6,9 +6,19 @@ using LinearAlgebra
 
 LinearAlgebra.norm(hdv::AbstractHDV) = norm(hdv.v)
 
+function LinearAlgebra.dot(x::AbstractHDV, y::AbstractHDV)
+    if x.offset == y.offset
+        nx = normalizer(x)
+        ny = normalizer(y)
+        return sum(dot(nx(vx),ny(vy)) for (vx,vy) in zip(x.v, y.v))
+    else
+        return dot(x, y)
+    end
+end
+
 cos_sim(x::AbstractVector, y::AbstractVector) = dot(x, y) / (norm(x) * norm(y))
 
-jacc_sim(x::AbstractVector, y::AbstractVector) = sum(prod, zip(x, y)) / sum(t->t[1]+t[2]-t[1]*t[2], zip(x,y))
+jacc_sim(x::AbstractVector, y::AbstractVector) = dot(x, y) / sum(t->t[1]+t[2]-t[1]*t[2], zip(x,y))
 
 # specific similarities
 # for HDVs that can both be pos and neg,
