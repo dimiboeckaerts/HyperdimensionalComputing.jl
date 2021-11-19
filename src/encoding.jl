@@ -71,6 +71,7 @@ function sequence_embedding!(result::AbstractHDV, sequence, token_vectors, w=3)
         offsetcombine!(result.v, aggfun(result), result.v, tmp.v, 0)
     end
     result.m = length(sequence)-w
+    normalize!(result)
     return result
 end
 
@@ -83,6 +84,7 @@ function sequence_embedding!(result::AbstractHDV, sequence, ngrams_embedding::NG
         offsetcombine!(result.v, aggfun(result), result.v, hdv.v, 0)
     end
     result.m = length(sequence)-w
+    normalize!(result)
     return result
 end
 

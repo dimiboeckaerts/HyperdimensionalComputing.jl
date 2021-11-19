@@ -107,22 +107,9 @@ function aggregate!(r::AbstractHDV, hdvs)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
-    r.m = length(hdvs)
+    r.m = length(hdvs)  # TODO: weights
     return r
 end
-
-#=
-function aggregate!(r::BinaryHDV, hdvs)
-    counts = zeros(Int, length(r))
-    aggr = aggfun(r)
-    foldl(hdvs, init=counts) do acc, value
-        offsetcombine!(acc, aggr, acc, value.v, value.offset)
-    end
-    # use majority rule
-    r.v .= counts .> (length(hdvs) ÷ 2)
-    return r
-end
-=#
 
 function aggregate!(r::GradedHDV, hdvs)
     # neutral element is 0.5 for graded

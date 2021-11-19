@@ -20,7 +20,12 @@ Base.size(hdv::AbstractHDV) = size(hdv.v)
 @inline Base.setindex!(hdv::AbstractHDV, val, i) = @inbounds (hdv.v[validindex(i-hdv.offset, length(hdv))] = val)
 
 normalizer(::AbstractHDV) = identity  # normalizer does nothing by default
-normalize!(hdv::AbstractHDV) = (hdv.v .= normalizer(hdv).(hdv.v)) 
+
+function normalize!(hdv::AbstractHDV)
+    hdv.v .= normalizer(hdv).(hdv.v)
+    hdv.m = 1
+    return hdv
+end
 
 getvector(hdv::AbstractHDV) = hdv.v
 
@@ -44,11 +49,8 @@ normalizer(::BipolarHDV) = vᵢ -> clamp(vᵢ, -1, 1)
 
 @inline Base.getindex(hdv::BipolarHDV, i) = @inbounds hdv.v[validindex(i-hdv.offset, length(hdv))]
 
-normalize!(hdv::BipolarHDV) = (hdv.v .= sign.(hdv.v))
 
 # `BinaryHDV` contain binary vectors.
-
-# TODO: this should probabily just make use of a vector of ints...
 
 mutable struct BinaryHDV <: AbstractHDV{Bool}
     v::Vector{Int}
