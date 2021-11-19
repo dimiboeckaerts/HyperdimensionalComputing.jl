@@ -49,8 +49,8 @@ neutralbind(hdv::BinaryHDV) = false
 neutralbind(hdv::GradedHDV) = zero(eltype(hdv))
 neutralbind(hdv::GradedBipolarHDV) = -one(eltype(hdv))
 
-normalize!(::AbstractHDV, n) = nothing
-normalize!(hdv::RealHDV, n) = (hdv.v ./= sqrt(n))
+#normalize!(::AbstractHDV, n) = nothing
+#normalize!(hdv::RealHDV, n) = (hdv.v ./= sqrt(n))
 #normalize!(hdv::BipolarHDV, n) = (hdv.v .= sign.(hdv.v))
 
 function elementreduce!(f, itr, init)
@@ -107,10 +107,11 @@ function aggregate!(r::AbstractHDV, hdvs)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
-    normalize!(r, length(hdvs))
+    r.m = length(hdvs)
     return r
 end
 
+#=
 function aggregate!(r::BinaryHDV, hdvs)
     counts = zeros(Int, length(r))
     aggr = aggfun(r)
@@ -121,6 +122,7 @@ function aggregate!(r::BinaryHDV, hdvs)
     r.v .= counts .> (length(hdvs) ÷ 2)
     return r
 end
+=#
 
 function aggregate!(r::GradedHDV, hdvs)
     # neutral element is 0.5 for graded
@@ -129,7 +131,7 @@ function aggregate!(r::GradedHDV, hdvs)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
-    normalize!(r, length(hdvs))
+    r.m = length(hdvs)
     return r
 end
 
@@ -142,6 +144,7 @@ Base.:*(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = bind!(similar(hdv1), (h
 
 function bind!(r::AbstractHDV, hdvs)
     fill!(r.v, neutralbind(r))
+    r.m = 1  # fresh vector
     binder = bindfun(r)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, binder, acc, value.v, value.offset)
@@ -151,7 +154,6 @@ end
 
 # SHIFTING
 # --------
-
 
 function Base.circshift!(hdv::AbstractHDV, k)
     hdv.offset += k

@@ -28,6 +28,8 @@ end
 
 Base.show(io::IO, ngrams::NGrams) = print("n-gram embedding of order $(order(ngrams)) for type $(vectortype(ngrams))")
 
+# TODO: consider using an N-dim array?
+
 # Generates nested dictionary with ngrams 
 # needs to be hard-coded for dispatch
 compute_1_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), Dict(zip(alphabet, hdvs)))
@@ -68,24 +70,7 @@ function sequence_embedding!(result::AbstractHDV, sequence, token_vectors, w=3)
         end
         offsetcombine!(result.v, aggfun(result), result.v, tmp.v, 0)
     end
-    normalize!(result, length(sequence)-w)
-    return result
-end
-
-function sequence_embedding!(result::BinaryHDV, sequence, token_vectors, w=3)
-    count = zeros(Int, length(result))
-    fill!(result.v, zero(eltype(result)))
-    tmp = similar(result)
-    n = length(sequence)
-    for i in 1:n-w
-        fill!(tmp.v, neutralbind(tmp))
-        for k in (w-1):-1:0
-            v = token_vectors[sequence[i+k]]
-            offsetcombine!(tmp.v, bindfun(tmp), tmp.v, v.v, v.offset + k)
-        end
-        offsetcombine!(count, +, count, tmp.v, 0)
-    end
-    result.v = count .> div(n-w, 2)
+    result.m = length(sequence)-w
     return result
 end
 
@@ -97,20 +82,7 @@ function sequence_embedding!(result::AbstractHDV, sequence, ngrams_embedding::NG
         hdv = get_gram_embedding(sequence, i, ngrams_embedding)
         offsetcombine!(result.v, aggfun(result), result.v, hdv.v, 0)
     end
-    normalize!(result, length(sequence)-w)
-    return result
-end
-
-function sequence_embedding!(result::BinaryHDV, sequence, ngrams_embedding::NGrams)
-    fill!(result.v, zero(eltype(result)))
-    count = zeros(Int, length(result))
-    n = length(sequence)
-    w = order(ngrams_embedding)
-    for i in 1:n-w
-        hdv = get_gram_embedding(sequence, i, ngrams_embedding)
-        count .+= hdv.v
-    end
-    result.v .= count .> div(n-w, 2)
+    result.m = length(sequence)-w
     return result
 end
 
