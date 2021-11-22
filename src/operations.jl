@@ -49,10 +49,6 @@ neutralbind(hdv::BinaryHDV) = false
 neutralbind(hdv::GradedHDV) = zero(eltype(hdv))
 neutralbind(hdv::GradedBipolarHDV) = -one(eltype(hdv))
 
-#normalize!(::AbstractHDV, n) = nothing
-#normalize!(hdv::RealHDV, n) = (hdv.v ./= sqrt(n))
-#normalize!(hdv::BipolarHDV, n) = (hdv.v .= sign.(hdv.v))
-
 function elementreduce!(f, itr, init)
     return foldl(itr; init) do acc, value
         acc .= f.(acc, value)
@@ -95,9 +91,8 @@ end
 # AGGREGATION
 # -----------
 
-aggregate(hdvs::AbstractVector{<:AbstractHDV}) = aggregate!(similar(first(hdvs)), hdvs)
-
-#aggregate(hdvs::AbstractHDV...) = aggregate!(similar(first(hdvs)), )
+aggregate(hdvs::AbstractVector{<:AbstractHDV}, args...; kwargs...) = aggregate!(similar(first(hdvs)), hdvs, args...; kwargs...)
+aggregate(hdvs::NTuple{N,T}, args...; kwargs...) where {N,T<:AbstractHDV} = aggregate!(similar(first(hdvs)), hdvs, args...; kwargs...)
 
 Base.:+(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = aggregate!(similar(hdv1), (hdv1, hdv2))
 
@@ -110,7 +105,23 @@ function aggregate!(r::AbstractHDV, hdvs; clear=true, norm=false)
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, aggr, acc, value.v, value.offset)
     end
-    r.m += length(hdvs)  # TODO: weights
+    for hdv in hdvs
+        r.m += hdv.m
+    end
+    norm && normalize!(r)
+    return r
+end
+
+function aggregate!(r::AbstractHDV, hdvs, weights; clear=true, norm=false)
+    @assert length(hdvs) == length(weights) "You have to provide the same number of weights as vectors."
+    clear && clearhdv!(r)
+    aggr = aggfun(r)
+    foldl(zip(hdvs, weights), init=r.v) do acc, (value, weight)
+        offsetcombine!(acc, aggr, acc, weight .* value.v, value.offset)
+    end
+    for (hdv, weight) in zip(hdvs, weights)
+        r.m += weight * hdv.m
+    end
     norm && normalize!(r)
     return r
 end
@@ -121,12 +132,16 @@ aggregatewith!(r::AbstractHDV, hdvs; kwargs...) = aggregate!(r, hdvs; clear=fals
 # -------
 
 Base.bind(hdvs::AbstractVector{<:AbstractHDV}) = bind!(similar(first(hdvs)), hdvs)
+Base.bind(hdvs::NTuple{N,T}) where {N,T<:AbstractHDV} = bind!(similar(first(hdvs)), hdvs)
+
 Base.:*(hdv1::HDV, hdv2::HDV) where {HDV<:AbstractHDV} = bind!(similar(hdv1), (hdv1, hdv2))
 
 function bind!(r::AbstractHDV, hdvs)
     fill!(r.v, neutralbind(r))
     r.m = 1  # fresh vector
-    binder = bindfun(r)
+    # extract the normalizer
+    nr = normalizer(r)
+    binder = (x, y) -> bindfun(r)(nr(x), nr(y))
     foldl(hdvs, init=r.v) do acc, value
         offsetcombine!(acc, binder, acc, value.v, value.offset)
     end
