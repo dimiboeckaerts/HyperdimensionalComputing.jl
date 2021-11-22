@@ -21,6 +21,8 @@ Base.size(hdv::AbstractHDV) = size(hdv.v)
 
 @inline Base.setindex!(hdv::AbstractHDV, val, i) = @inbounds (hdv.v[validindex(i-hdv.offset, length(hdv))] = val)
 
+Base.Vector(hdv::AbstractHDV) = collect(hdv)
+
 #=
 Base.iterate(hdv::AbstractHDV, state=1) = state > length(hdv) ?
                                                     nothing :
