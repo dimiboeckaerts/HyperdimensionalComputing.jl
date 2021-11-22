@@ -57,9 +57,6 @@ Base.similar(hdv::BipolarHDV) = BipolarHDV(similar(hdv.v), 0, 0)
 
 normalizer(::BipolarHDV) = vᵢ -> clamp(vᵢ, -1, 1) 
 
-@inline Base.getindex(hdv::BipolarHDV, i) = @inbounds hdv.v[validindex(i-hdv.offset, length(hdv))]
-
-
 # `BinaryHDV` contain binary vectors.
 
 mutable struct BinaryHDV <: AbstractHDV{Bool}
