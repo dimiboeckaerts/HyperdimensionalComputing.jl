@@ -6,6 +6,8 @@ train(y, hdvs) = Dict(c=>aggregate(hdvs[y.==c]) for c in unique(y))
 
 predict(v::AbstractHDV, centers) = maximum((similarity(v, xcᵢ), yᵢ) for (yᵢ, xcᵢ) in centers)[2]
 
+predict(hdvs::Vector{<:AbstractHDV}, centers) = [maximum((similarity(v, xcᵢ), yᵢ) for (yᵢ, xcᵢ) in centers)[2] for v in hdvs]
+
 function retrain!(centers, y, hdvs; niters=10, verbose=true)
     @assert length(y) == length(hdvs)
     n_obs = length(y)

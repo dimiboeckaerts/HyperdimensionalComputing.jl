@@ -7,12 +7,12 @@ using LinearAlgebra
 LinearAlgebra.norm(hdv::AbstractHDV) = norm(hdv.v)
 
 function LinearAlgebra.dot(x::AbstractHDV, y::AbstractHDV)
-    if x.offset == y.offset
-        nx = normalizer(x)
-        ny = normalizer(y)
-        return sum(dot(nx(vx),ny(vy)) for (vx,vy) in zip(x.v, y.v))
+    nx = normalizer(x)
+    ny = normalizer(y)
+    if x.offset == y.offset  
+        return sum(((vx,vy),)->dot(nx(vx),ny(vy)), zip(x.v, y.v))
     else
-        return dot(x, y)
+        return sum(((vx,vy),)->dot(nx(vx),ny(vy)), zip(x, y))
     end
 end
 
