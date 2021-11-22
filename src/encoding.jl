@@ -2,140 +2,108 @@
 encoding.jl; This file implements functions to encode token-based data, be it alphabets, strings or full classes of text.
 =#
 
+# SEQUENCE EMBEDDING
 
-const HYPERVECTOR_DIM = convert(Int16, 10000)
+# precomputing of the n-grams
 
+ngrams_recursion(d::AbstractDict{K,V}, hdv::AbstractHDV) where {K,V<:AbstractHDV} = 
+    Dict(k => hdv * Π(v, 1) for (k, v) in d)
 
-"""
-This function encodes a given alphabet (collection of tokens) as hypervectors of the chosen type.\n
+ngrams_recursion(d::AbstractDict{K,V}, hdv::AbstractHDV) where {K,V<:AbstractDict} = 
+    Dict(k => ngrams_recursion(v, hdv) for (k, v) in d)
 
-Input: 
-    - a vector of chars denoting the alphabet, e.g. ['A', 'C', 'T', 'G'] or 'a':'z'.\n
-    - the type of vector, either bipolar or binary. By default this is a bipolar vector.\n
-Output: a dictionary with vector encodings for each token in the alphabet.
-"""
-function encode_alphabet(alphabet::Vector{Char}; vectortype="bipolar")
-    if vectortype=="bipolar"
-        return Dict((token=>rand(Int64[-1 1], HYPERVECTOR_DIM) for token in alphabet))
-    elseif vectortype=="binary"
-        return Dict((token=>convert(BitVector, rand(Bool, HYPERVECTOR_DIM)) for token in alphabet))
-    else
-        error("Please choose a valid vectortype: either bipolar or binary")
+function ngrams_recursion(d::AbstractDict{K,V}, hdvs) where {K,V}
+    result = Dict{K,Dict{K,V}}()
+    for k in keys(d)
+        result[k] = ngrams_recursion(d, hdvs[k])
     end
+    return result
 end
 
-
-"""
-This function creates a hyperdimensional vector for a given input sequence. It uses the encoded alphabet to go over the sequence elementwise or in k-mer blocks.\n
-
-Input:
-    - a string of tokens to encode. \n
-    - a dictionary with vector encodings for each token in the alphabet.\n
-    - an integer k that defines the size of k-mers to aggregate over. This value defaults to 1.\n
-Output: a hypervector encoding for the sequence.\n
-
-DISCLAIMER: Removed the 'dim' argument from this function, as it has to be equal to the dimensionality of the alphabet hypervectors.
-
-Additional comments: \n
-    - kmer_encoding with a sum instead of mutiplication?\n
-    - circshift over entire sequence with k=1.
-"""
-function encode_sequence(sequence::String, encoded_alphabet::Dict; k=1::Int)
-    # precompute the first kmer-encoding as the starting point as both ones() and zeros() vectors will cause issues with binary hypervectors
-    encoding = encoded_alphabet[sequence[1:1+(k-1)][end]]
-    for kmer_index in 1:k-1
-        encoding = multiply(encoding, rotate(encoded_alphabet[sequence[1:1+(k-1)][end-kmer_index]], kmer_index))
-    end
-    
-    # iterate over the others
-    for sliding_index in 2:length(sequence)-(k-1)
-        kmer_encoding = encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end]]
-        for kmer_index in 1:k-1
-            kmer_encoding = multiply(kmer_encoding, rotate(encoded_alphabet[sequence[sliding_index:sliding_index+(k-1)][end-kmer_index]], kmer_index))
-        end
-        #encoding = add(encoding, kmer_encoding)
-        encoding = add(encoding, kmer_encoding)
-    end
-    if typeof(encoding) == BitVector
-        return encoding
-    elseif eltype(encoding) == Int
-        return sign.(encoding)
-    end
+# structure to store the N-grams
+struct NGrams{V,D}
+    d::D
+    NGrams(V::Type, d::AbstractDict) = new{V,typeof(d)}(d)
 end
 
+Base.show(io::IO, ngrams::NGrams) = print("n-gram embedding of order $(order(ngrams)) for type $(vectortype(ngrams))")
+
+# TODO: consider using an N-dim array?
+
+# Generates nested dictionary with ngrams 
+# needs to be hard-coded for dispatch
 #=
-"""
-This function loops over a matrix of hyperdimensional vectors and its associated\n
-classes and constructs a profile for each class by summing the corresponding HVs.\n
-\n
-Compared to traditional machine learning, this encoding of classes constitutes the\n
-'learning', as hyperdimensional vectors of all classes are combined via elementwise\n
-addition to learn a representation of the class a a whole.\n
-\n
-Input:\n
-- encoding_matrix: matrix with encodings (#encodings x dim)\n
-- classes: corresponding class labels (# encodings)\n
-- max_iterations: # of max iterations for retraining\n
-Output: dictionary of HVs for each of the classes\n
-\n
-Addition: don't subtract from all classes, only wrong one?\n
-Addition: rethink retraining for multiclass, more complex measure?
-"""
-function encode_classes(encoding_matrix::Array, classes; max_iterations=25::Int)
-    # initial encodings
-    class_encodings = Dict()
-    for row in 1:size(encoding_matrix)[1]
-        if classes[row] in keys(class_encodings)
-            class_encodings[classes[row]] += encoding_matrix[row,:]
-        else
-            class_encodings[classes[row]] = encoding_matrix[row,:]
-        end
-    end
-
-    # retraining
-    count_wrong = 10000
-    stop = 0
-    iteration = 0
-    while (iteration <= max_iterations) & (count_wrong > 0) & (stop == 0)
-        # loop over matrix
-        count_wrong_iter = 0
-        for row in 1:size(encoding_matrix)[1]
-            distances = Dict()
-            actual_class = classes[row]
-            for (class, class_vector) in class_encodings # compute distances
-                distances[class] = cosine_dist(encoding_matrix[row,:], class_vector)
-            end
-            minimal_class = findmin(distances)[2]
-
-            if minimal_class != actual_class # if wrong, adjust
-                count_wrong_iter += 1
-                for key in keys(class_encodings)
-                    if key != actual_class
-                        class_encodings[key] -= encoding_matrix[row,:]
-                    else
-                        class_encodings[key] += encoding_matrix[row,:]
-                    end
-                end
-            end
-        end
-        #println("it: ", iteration, "wrong: ", count_wrong, "wrong it: ", count_wrong_iter)
-
-        # check convergence
-        if count_wrong_iter < count_wrong
-            count_wrong = count_wrong_iter
-            iteration += 1
-            stop = 0
-        elseif count_wrong_iter > count_wrong
-            count_wrong = count_wrong_iter
-            iteration += 1
-            stop = 0
-        else
-            stop = 1
-        end
-    end
-
-    println("number of iterations: ", iteration)
-    println("number of wrong class assignments: ", count_wrong)
-    return class_encodings
-end
+compute_1_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), Dict(c=>hdvs[c] for c in alphabet))
+compute_2_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_1_grams(hdvs, alphabet).d, hdvs))
+compute_3_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_2_grams(hdvs, alphabet).d, hdvs))
+compute_4_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_3_grams(hdvs, alphabet).d, hdvs))
+compute_5_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_4_grams(hdvs, alphabet).d, hdvs))
+compute_6_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_5_grams(hdvs, alphabet).d, hdvs))
+compute_7_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_6_grams(hdvs, alphabet).d, hdvs))
+compute_8_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_7_grams(hdvs, alphabet).d, hdvs))
 =#
+compute_1_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), Dict(c=>hdvs[c] for c in alphabet))
+compute_2_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_1_grams(hdvs, alphabet).d, hdvs))
+compute_3_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_2_grams(hdvs, alphabet).d, hdvs))
+compute_4_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_3_grams(hdvs, alphabet).d, hdvs))
+compute_5_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_4_grams(hdvs, alphabet).d, hdvs))
+compute_6_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_5_grams(hdvs, alphabet).d, hdvs))
+compute_7_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_6_grams(hdvs, alphabet).d, hdvs))
+compute_8_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_7_grams(hdvs, alphabet).d, hdvs))
+
+# get the embedding on the k-gram that starts at position i
+get_gram_embedding(sequence, i, embeddings::Dict{K,V}) where {K,V<:Dict} =
+            get_gram_embedding(sequence, i+1, embeddings[sequence[i]])
+get_gram_embedding(sequence, i, embeddings::Dict{K,V}) where {K,V<:AbstractHDV} = embeddings[sequence[i]]
+get_gram_embedding(sequence, i, embeddings::NGrams) = get_gram_embedding(sequence, i, embeddings.d)
+
+order(embeddings::Dict{K,V}) where {K,V<:Dict} = order(first(embeddings::Dict{K,V})[2]) + 1
+order(embeddings::Dict) = 1
+order(embeddings::NGrams) = order(embeddings.d)
+
+vectortype(embeddings::NGrams{V,D}) where {V, D} = V
+
+get_leaf(d::AbstractDict{K,V}) where {K,V<:AbstractDict} = get_leaf(d[first(keys(d))])
+get_leaf(d::AbstractDict) = d[first(keys(d))]
+
+similar_vector(ngrams::NGrams) = similar(get_leaf(ngrams.d))
+
+function sequence_embedding!(result::AbstractHDV, sequence, token_vectors, w=3)
+    fill!(result.v, zero(eltype(result)))
+    tmp = similar(result)
+    n = length(sequence)
+    for i in 1:n-w
+        fill!(tmp.v, neutralbind(tmp))
+        for k in (w-1):-1:0
+            v = token_vectors[sequence[i+k]]
+            offsetcombine!(tmp.v, bindfun(tmp), tmp.v, v.v, v.offset + k)
+        end
+        offsetcombine!(result.v, aggfun(result), result.v, tmp.v, 0)
+    end
+    result.m = length(sequence)-w
+    normalize!(result)
+    return result
+end
+
+function sequence_embedding!(result::AbstractHDV, sequence, ngrams_embedding::NGrams)
+    fill!(result.v, zero(eltype(result)))
+    n = length(sequence)
+    w = order(ngrams_embedding)
+    for i in 1:n-w
+        hdv = get_gram_embedding(sequence, i, ngrams_embedding)
+        offsetcombine!(result.v, aggfun(result), result.v, hdv.v, 0)
+    end
+    result.m = length(sequence)-w
+    normalize!(result)
+    return result
+end
+
+sequence_embedding(sequence, token_vectors::AbstractVector{V}, args...) where {V<:AbstractHDV} = 
+                sequence_embedding!(similar(first(token_vectors)), sequence, token_vectors, args...)
+    
+sequence_embedding(sequence, token_vectors::Dict{T,V}, args...) where {T,V<:AbstractHDV} = 
+                sequence_embedding!(similar(first(token_vectors)[2]), sequence, token_vectors, args...)
+
+sequence_embedding(sequence, ngrams_embedding::NGrams, args...) = 
+                sequence_embedding!(similar_vector(ngrams_embedding), sequence, ngrams_embedding, args...)
+
