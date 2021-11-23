@@ -28,7 +28,7 @@ classes = coerce(classes, Multiclass);
 dimension = 10000
 nfolds = 5
 kvalues = LinRange(5, 10, 6)
-encoded_alphabet = encode_alphabet(["A", "G", "I", "L", "P", "V", "F", "W", "Y", "D",
+encoded_alphabet = encode_items(["A", "G", "I", "L", "P", "V", "F", "W", "Y", "D",
                                     "E", "R", "H", "K", "S", "T", "C", "M", "N", "Q"],
                                     dim=dimension)
 
@@ -51,7 +51,7 @@ for kval in kvalues
         end
 
         # encode class vectors
-        class_vectors = encode_classes(x_train, y_train)
+        class_vectors = encode_associative_memory(x_train, y_train)
 
         # make predictions
         preds = make_predictions(x_test, class_vectors)
