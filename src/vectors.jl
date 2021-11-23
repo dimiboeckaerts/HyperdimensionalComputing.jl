@@ -28,7 +28,6 @@ Base.iterate(hdv::AbstractHDV, state=1) = state > length(hdv) ?
                                                     nothing :
                                             (normalizer(hdv)(hdv.v[validindex(i-hdv.offset, length(hdv))]), state+1)
 =#
-
 normalizer(::AbstractHDV) = identity  # normalizer does nothing by default
 
 function normalize!(hdv::AbstractHDV)

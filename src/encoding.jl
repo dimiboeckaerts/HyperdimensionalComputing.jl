@@ -32,16 +32,6 @@ Base.show(io::IO, ngrams::NGrams) = print("n-gram embedding of order $(order(ngr
 
 # Generates nested dictionary with ngrams 
 # needs to be hard-coded for dispatch
-#=
-compute_1_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), Dict(c=>hdvs[c] for c in alphabet))
-compute_2_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_1_grams(hdvs, alphabet).d, hdvs))
-compute_3_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_2_grams(hdvs, alphabet).d, hdvs))
-compute_4_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_3_grams(hdvs, alphabet).d, hdvs))
-compute_5_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_4_grams(hdvs, alphabet).d, hdvs))
-compute_6_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_5_grams(hdvs, alphabet).d, hdvs))
-compute_7_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_6_grams(hdvs, alphabet).d, hdvs))
-compute_8_grams(hdvs, alphabet=1:length(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_7_grams(hdvs, alphabet).d, hdvs))
-=#
 compute_1_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), Dict(c=>hdvs[c] for c in alphabet))
 compute_2_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_1_grams(hdvs, alphabet).d, hdvs))
 compute_3_grams(hdvs, alphabet=keys(hdvs)) = NGrams(eltype(hdvs), ngrams_recursion(compute_2_grams(hdvs, alphabet).d, hdvs))
