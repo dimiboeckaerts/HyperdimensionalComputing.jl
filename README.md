@@ -6,7 +6,7 @@
 [![Coverage](https://codecov.io/gh/dimiboeckaerts/HyperdimensionalComputing.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/dimiboeckaerts/HyperdimensionalComputing.jl)
 
 
-This package imprements special types of vectors and associated methods for hyperdimensional computing. Hyperdimensional computing (HDC) is a paragdigm to represent patterns by means of a high-dimensional (typically 10,000 dimensions). Specific operations can be used to create new vectors by combining the information or encoding some kind of position. HDC is an alternative machine learning method that is extremely computationally efficient. It is inspired by the distributed, holographic representation of patterns in the brain. Typically, the high-dimensionality is more important than the nature of the operations. This package provides various types of vectors (binary, graded, bipolar...) with sensible operations for *aggragating*, *binding* and *permutation*. Basic functionality for fitting a k-NN like classifier is also supported.
+This package implements special types of vectors and associated methods for hyperdimensional computing. Hyperdimensional computing (HDC) is a paragdigm to represent patterns by means of a high-dimensional vectors (typically 10,000 dimensions). Specific operations can be used to create new vectors by combining the information or encoding some kind of position. HDC is an alternative machine learning method that is extremely computationally efficient. It is inspired by the distributed, holographic representation of patterns in the brain. Typically, the high-dimensionality is more important than the nature of the operations. This package provides various types of vectors (binary, graded, bipolar...) with sensible operations for *aggragating*, *binding* and *permutation*. Basic functionality for fitting a k-NN like classifier is also supported.
 
 ## Basic use
 
@@ -50,7 +50,7 @@ See the table for which operations are used for which type.
 
 ## Embedding sequences
 
-HDC is particularly powerful for embedding sequences. This is done by creating embeddings for k-grams and aggregating the n-grams found in the seuqence.
+HDC is particularly powerful for embedding sequences. This is done by creating embeddings for n-grams and aggregating the n-grams found in the sequence.
 
 ```julia
 # create dictionary for embedding
@@ -61,7 +61,7 @@ sequence = "TAGTTTGAGGATCCGCTCGCTGCAACGCG"
 
 seq_embedding = sequence_embedding(sequence, basis, 3)  # embedding using 3-grams
 ```
-If the size of the number of k-grams is not too large, it makes sense to precompute these to speed up the encoding process.
+If the size of the number of n-grams is not too large, it makes sense to precompute these to speed up the encoding process.
 
 ```julia
 threegrams = compute_3_grams(basis)
