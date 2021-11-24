@@ -1,6 +1,7 @@
 using HyperdimensionalComputing
 using Test
 
-@testset "HyperdimensionalComputing.jl" begin
-    # Write your tests here.
-end
+include("vectors.jl")
+include("operations.jl")
+include("encoding.jl")
+include("inference.jl")
