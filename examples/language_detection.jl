@@ -52,13 +52,13 @@ end
 
 
 # load in and preprocess training paragraphs from project Gutenberg
-labelled_languages_df = DataFrame(CSV.File("data/labelled_languages_train.csv"))
+labelled_languages_df = DataFrame(CSV.File("data/language/labelled_languages_train.csv"))
 insertcols!(labelled_languages_df, 2, :"PREPROC"=>Vector{String}(undef, size(labelled_languages_df, 1)))
 labelled_languages_df[!, "PREPROC"] = [language_preprocessing(labelled_languages_df[i, "TEXT"]) for i in 1:size(labelled_languages_df, 1)]
 
 
 # load in and preprocess testing sentences from tatoeba.org
-examples_df = DataFrame(CSV.File("data/labelled_languages_test.csv"))
+examples_df = DataFrame(CSV.File("data/language/labelled_languages_test.csv"))
 insertcols!(examples_df, 2, :"PREPROC"=>Vector{String}(undef, size(examples_df, 1)))
 examples_df[!, "PREPROC"] = [language_preprocessing(examples_df[i, "TEXT"]) for i in 1:size(examples_df, 1)]
 
