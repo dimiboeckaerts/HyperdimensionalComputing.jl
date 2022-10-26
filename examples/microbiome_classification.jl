@@ -3,6 +3,7 @@ microbiome_classification.jl; this script shows the application of hypervectors 
 =#
 using Pkg
 Pkg.activate(".")
+Pkg.instantiate()
 using CSV, DataFrames, HyperdimensionalComputing, MLJ, MultivariateStats, NaiveBayes, Plots, Printf, StatsBase
 
 
@@ -19,14 +20,31 @@ function quickeval(pred_labels, true_labels)
     TN = sum(tn_);
     FN = length(tn_) - TN;
 
-    accuracy = round(sum(pred_labels .== true_labels)/length(true_labels) * 100; digits=2)
-    fscore = round(TP / (TP + (1/2)*(FP + FN)); digits=2)
+    accuracy = round((TP + TN)/length(true_labels) * 100; digits=2)
+    fscore = round(TP/(TP + (1/2)*(FP + FN)); digits=2)
     println("\tAccuracy: $accuracy%")
     println("\tF-score: $fscore")
+    println(
+            """
+            \t  \t1\t \t0\t         
+            \t  ------------------------------
+            \t1|\t$TP\t|\t$FN\t|
+            \t |--------------|---------------|
+            \t0|\t$FP\t|\t$TN\t|
+            \t  ------------------------------
+            """
+            )
 end
 
 """
-function to tranform relative (continuous between 0 and 1) abundances to integer counts. To this end,
+Function to transform relative or absolute abundances to a binary presence/absence.
+"""
+function binary_transform_counts(counts::Matrix)
+    return relative_count_mat .> 0
+end
+
+"""
+Function to tranform relative (continuous between 0 and 1) abundances to integer counts. To this end,
 the lowest non-zero abundance in each sample is set to a singleton. 
 """
 function integer_transform_counts(relative_counts::Matrix)
@@ -36,6 +54,91 @@ function integer_transform_counts(relative_counts::Matrix)
         absolute_counts[idx, :] = round.((1 / smallest_non_zero) * relative_counts[idx, :])
     end
     return absolute_counts
+end
+
+"""
+Function to tranform absolute (integer) coutns to normalized, relative counts. Currently,
+only a sum-normalisation is implemented, though ideally a VST should also be implemented.
+"""
+function normalize_counts(absolute_counts::Matrix; method="sum")
+    @assert method ∈ ["sum", "VST"]
+    normalized_counts = zeros(Integer, size(absolute_counts))
+    if method == "sum"
+        totals = sum(absolute_counts, dims=2)
+        for idx in 1:size(absolute_counts, 1)
+            normalized_counts[idx, :] = absolute_counts[idx,  :] ./ totals[idx]
+        end
+        return normalized_counts
+    else
+        @error "VST is not yet implemented"
+    end
+end
+
+"""
+Function to transform microbial abundances to the desired format. The grain argument 
+refers to the resolution to which abundances are transformed: 
+    - binary = micro-organisms will be represented as present or absent
+    - relative = micro-organisms will be represented by their normalized proportion of 
+                 the entire sample.
+    - absolute = micro-organisms will be represented by their absolute sequence count.
+"""
+function transform_counts(counts::Matrix; grain::String="absolute")
+    @assert grain ∈ ["binary", "relative", "absolute"] 
+    if grain == "binary"
+        return binary_transform_counts(counts)
+    else
+        original_counts_are_relative = all(relative_count_mat .<= 1)
+        if ((original_counts_are_relative && grain == "relative") || (!original_counts_are_relative && grain == "absolute"))
+            return counts
+        elseif (original_counts_are_relative && grain == "absolute")
+            return integer_transform_counts(counts)
+        elseif (!original_counts_are_relative && grain == "relative")
+            return normalize_counts(counts)
+        end
+    end
+end
+
+"""
+Function to encode microbial counts matrices into hyperdimensional matrices. The grain argument 
+refers to the resolution with which abundances are encoded: 
+    - binary = microbial presence or absence will be encoded
+    - relative = the relative, continuous (between 0 and 1) abundances will be encoded.
+    - absolute = the absolute, integer counts will be encoded.
+"""
+function encode_counts(counts::Matrix, tax_ordered::Vector; grain::String="absolute")
+    @assert grain ∈ ["binary", "relative", "absolute"] 
+    n, p = size(counts)
+
+    # set appropriate grain
+    vector_type = Dict("binary" => BinaryHDV, "relative" => RealHDV, "absolute" => BinaryHDV)[grain]
+    grained_counts = transform_counts(counts; grain=grain)
+    
+    # encode each micro-organism
+    @info "Generating random hypervectors..."
+    #encoded_taxa = [vector_type() for x in 1:p]
+    encoded_taxa = Dict(x => vector_type() for x in tax_ordered)
+
+    # encode samples
+    @info "Encoding $grain microbial counts..."
+    encoded_samples = Vector{vector_type}()
+    for sample_idx in 1:n
+        if (grain == "absolute")
+            sample_encoding = similar(encoded_taxa[first(tax_ordered)])
+            for microbe_idx in 1:p
+                count_int = grained_counts[sample_idx, microbe_idx]
+                microbe_encoding = encoded_taxa[tax_ordered[microbe_idx]]
+                abundance_encoding = similar(microbe_encoding)
+                
+                for i in 1:count_int
+                    abundance_encoding =+ microbe_encoding
+                end
+                sample_encoding += abundance_encoding #bundling
+                #sample_encoding *= abundance_encoding #binding
+            end
+        end
+        push!(encoded_samples, sample_encoding)
+    end
+    return encoded_samples
 end
 
 
@@ -58,30 +161,9 @@ absolute_count_mat = integer_transform_counts(relative_count_mat)
 
 
 
-### encode OTUs
-@info "Generating random hypervectors..."
-encoded_taxa = Dict(x => BinaryHDV() for x in taxa[!, "otuID"])
-
-
 
 ### encode samples
-@info "Encoding microbial counts..."
-encoded_samples = Vector{typeof(first(values(encoded_taxa)))}()
-for sample in 1:size(absolute_count_mat, 1)
-    sample_encoding = similar(encoded_taxa[taxa[1, "otuID"]])
-    for microbe in 1:size(absolute_count_mat, 2)
-        count_int = absolute_count_mat[sample, microbe]
-        microbe_encoding = encoded_taxa[taxa[microbe, "otuID"]]
-        abundance_encoding = similar(microbe_encoding)
-
-        for i in 1:count_int
-            abundance_encoding =+ microbe_encoding
-        end
-        sample_encoding += abundance_encoding #bundling
-        #sample_encoding *= abundance_encoding #binding
-    end
-    push!(encoded_samples, sample_encoding)
-end
+encoded_samples = encode_counts(relative_count_mat, taxa[!, :otuID]; grain="absolute")
 encoded_samples_mat = reduce(hcat, encoded_samples)
 
 
@@ -94,7 +176,7 @@ Xtrain, Xtest, ytrain, ytest = encoded_samples[train_idx], encoded_samples[test_
 encoded_classes = Vector{typeof(first(Xtrain))}()
 for class in unique(ytrain)
     samples = [idx for idx in 1:length(ytrain) if isequal(ytrain[idx], class)]
-    class_encoding = similar(first(Xtrain))
+    class_encoding = similar(Xtrain[first(samples)])
     for s in samples
         class_encoding += Xtrain[s]
     end
@@ -143,11 +225,15 @@ Xtrain, Xtest, ytrain, ytest = encoded_samples_mat[:, train_idx], encoded_sample
 clf = MultinomialNB(unique(labels), size(Xtrain, 1))
 fit(clf, Xtrain, ytrain)
 train_ypred = StatsBase.predict(clf, Xtrain)
+#train_auc_score = auc(scores, ytrain)
 test_ypred = StatsBase.predict(clf, Xtest)
+#test_auc_score = auc(scores, ytest)
 println("On the train data:")
 quickeval(train_ypred, ytrain)
+#println("\tAUC: $train_auc_score")
 println("On the test data:")
 quickeval(test_ypred, ytest)
+#println("\tAUC: $test_auc_score")
 
 
 
