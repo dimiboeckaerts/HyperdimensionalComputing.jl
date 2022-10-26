@@ -122,8 +122,10 @@ function encode_counts(counts::Matrix, tax_ordered::Vector; grain::String="absol
     @info "Encoding $grain microbial counts..."
     encoded_samples = Vector{vector_type}()
     for sample_idx in 1:n
-        if (grain == "absolute")
-            sample_encoding = similar(encoded_taxa[first(tax_ordered)])
+        if (grain == "binary")
+            sample_encoding = sum([encoded_taxa[tax_ordered[microbe_idx]] for microbe_idx in 1:p if isequal(grained_counts[sample_idx, microbe_idx], 1)])
+        elseif (grain == "absolute")
+            sample_encoding = similar(encoded_taxa[tax_ordered[1]])
             for microbe_idx in 1:p
                 count_int = grained_counts[sample_idx, microbe_idx]
                 microbe_encoding = encoded_taxa[tax_ordered[microbe_idx]]
@@ -157,13 +159,11 @@ labels = map(x->Integer(isequal(x, "CD")), meta[!, "label"]) |> Vector
 color_labels = map(x->(isequal(x, "CD")) ? :blue : :orange, meta[!, "label"]) |> Vector
 @printf("\tThere are %d negative and %d positive samples.\n", values(countmap(labels))...)
 relative_count_mat = Matrix(counts[!, 2:end])
-absolute_count_mat = integer_transform_counts(relative_count_mat)
-
 
 
 
 ### encode samples
-encoded_samples = encode_counts(relative_count_mat, taxa[!, :otuID]; grain="absolute")
+encoded_samples = encode_counts(relative_count_mat, taxa[!, :otuID]; grain="binary")
 encoded_samples_mat = reduce(hcat, encoded_samples)
 
 
@@ -238,6 +238,7 @@ quickeval(test_ypred, ytest)
 
 
 @info "Naive Bayes inference on the raw counts..."
+absolute_count_mat = transform_counts(relative_count_mat; grain="absolute")
 Xtrain, Xtest, ytrain, ytest = absolute_count_mat'[:, train_idx], absolute_count_mat'[:, test_idx], labels[train_idx], labels[test_idx]
 
 clf = MultinomialNB(unique(labels), size(Xtrain, 1))
