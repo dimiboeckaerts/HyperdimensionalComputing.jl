@@ -323,7 +323,7 @@ Base.getindex(hv::BipolarHV, i::Integer) = hv.v[i] ? -1 : 1
 Base.getindex(hv::BipolarHV, I::AbstractVector) = ifelse.(hv.v[I], -1, 1)
 Base.sum(hv::BipolarHV) = length(hv.v) - 2sum(hv.v)
 LinearAlgebra.norm(hv::BipolarHV) = sqrt(length(hv))
-empty_vector(hv::BipolarHV) = zeros(Int, length(hv))
+empty_vector(hv::BipolarHV) = nothing  # bit-sliced bundle needs no accumulator
 eldist(::Type{BipolarHV}) = 2Bernoulli(0.5) - 1
 
 
@@ -537,7 +537,7 @@ function BinaryHV(v::AbstractVector{<:Real})
 end
 
 # Helpers
-empty_vector(hv::BinaryHV) = zeros(Int, length(hv))
+empty_vector(hv::BinaryHV) = nothing  # bit-sliced bundle needs no accumulator
 eldist(::Type{BinaryHV}) = Bernoulli(0.5)
 
 

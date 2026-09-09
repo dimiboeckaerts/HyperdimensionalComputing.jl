@@ -96,22 +96,98 @@ end
 # of votes for each state are ties that have to be resolved. To keep bundling
 # deterministic (identical inputs always yield the same result) while avoiding
 # the positional bias a fixed per-index rule would introduce, ties are broken
-# with a local RNG seeded from the aggregated votes `r`, which depends on every
+# with a local RNG seeded from the aggregated votes, which depend on every
 # input hypervector. Pass `rng` to override the seed (e.g. reproducible draws
 # from a caller-controlled stream), or `rng = Random.default_rng()` to recover
 # the previous, non-deterministic behaviour.
-function bundle(hvr::Union{BinaryHV, BipolarHV}, hdvs, r; rng::Union{Nothing, AbstractRNG} = nothing)
+#
+# The vote counts are kept bit-sliced over the BitVector storage: `planes[j, i]`
+# holds bit `j` of the counters for the 64 positions in chunk `i`, so a single
+# machine word tracks 64 counters at once. Adding a word of votes is a carry
+# ripple through its planes (amortized O(1) planes touched, like a binary
+# counter increment); inputs are pre-combined in triples with a bitwise full
+# adder (Harley–Seal style) so only two ripples are needed per three inputs.
+# The majority vote `count > m ÷ 2` is a bit-parallel magnitude comparator over
+# the planes — no per-element integer accumulator ever exists.
+
+# add a word `c` of weight `2^(j-1)` votes into the sliced counters of chunk `i`;
+# never ripples past the top plane as long as the total count stays below 2^nplanes
+@inline function ripple_votes!(planes, i, c, j)
+    @inbounds while c != 0
+        p = planes[j, i]
+        planes[j, i] = p ⊻ c
+        c &= p
+        j += 1
+    end
+    return nothing
+end
+
+function bundle(hvr::Union{BinaryHV, BipolarHV}, hdvs, r = nothing; rng::Union{Nothing, AbstractRNG} = nothing)
     m = length(hdvs)
-    for hv in hdvs
-        r .+= hv.v
+    n = length(hvr)
+    nc = length(hvr.v.chunks)
+    nplanes = 8 * sizeof(m) - leading_zeros(m)  # bits needed for counts up to m
+    planes = zeros(UInt64, nplanes, nc)
+    cvs = Vector{Vector{UInt64}}(undef, m)
+    for (k, hv) in enumerate(hdvs)
+        chunks = (hv.v::BitVector).chunks
+        length(chunks) == nc || throw(DimensionMismatch("hypervectors must have equal length"))
+        cvs[k] = chunks
     end
-    if iseven(m)  # break ties
-        tie_rng = isnothing(rng) ? Xoshiro(hash(r)) : rng
-        r .+= bitrand(tie_rng, length(r))
+    k = 1
+    @inbounds while k + 2 <= m
+        ca, cb, cc = cvs[k], cvs[k + 1], cvs[k + 2]
+        for i in 1:nc
+            a, b, c = ca[i], cb[i], cc[i]
+            axb = a ⊻ b
+            ripple_votes!(planes, i, axb ⊻ c, 1)             # sum bits, weight 1
+            ripple_votes!(planes, i, (a & b) | (c & axb), 2)  # carry bits, weight 2
+        end
+        k += 3
     end
-    hvr = similar(hvr)
-    hvr.v .= r .> m / 2
-    return hvr
+    @inbounds while k <= m
+        ck = cvs[k]
+        for i in 1:nc
+            ripple_votes!(planes, i, ck[i], 1)
+        end
+        k += 1
+    end
+    t = m >>> 1  # count > t is a majority; count == t (m even) is a tie
+    even = iseven(m)
+    tie_rng = if !even
+        nothing
+    elseif isnothing(rng)
+        seed = hash(m)
+        for x in planes
+            seed = hash(x, seed)
+        end
+        Xoshiro(seed)
+    else
+        rng
+    end
+    res = BitVector(undef, n)
+    rchunks = res.chunks
+    msk_end = n & 63 == 0 ? ~UInt64(0) : (UInt64(1) << (n & 63)) - UInt64(1)
+    @inbounds for i in 1:nc
+        # bit-parallel comparison of the 64 sliced counters in chunk i against t,
+        # scanning count bits from most to least significant
+        gt = UInt64(0)   # positions where count > t is already decided
+        eq = ~UInt64(0)  # positions where count == t so far
+        for j in nplanes:-1:1
+            p = planes[j, i]
+            if (t >>> (j - 1)) & 1 == 1
+                eq &= p
+            else
+                gt |= eq & p
+                eq &= ~p
+            end
+        end
+        w = gt
+        even && (w |= eq & rand(tie_rng, UInt64))
+        i == nc && (w &= msk_end)
+        rchunks[i] = w
+    end
+    return typeof(hvr)(res)
 end
 
 # ternary: just add them, no normalization by default
